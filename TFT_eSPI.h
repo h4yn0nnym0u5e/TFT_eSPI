@@ -520,6 +520,9 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
 
   void     fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h, uint32_t color1, uint32_t color2);
   void     fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h, uint32_t color1, uint32_t color2);
+  void     fillScreenVGradient(uint32_t color1, uint32_t color2)
+              { fillRectVGradient(0, 0, _width, _height, color1, color2); }
+  
 
   void     drawCircle(int32_t x, int32_t y, int32_t r, uint32_t color),
            drawCircleHelper(int32_t x, int32_t y, int32_t r, uint8_t cornername, uint32_t color),
@@ -683,6 +686,13 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
            textWidth(const String& string),
            fontHeight(uint8_t font),                        // Returns pixel height of specified font
            fontHeight(void);                                // Returns pixel height of current font
+           void getTextBounds(const char *string, int16_t x, int16_t y,
+                int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h)
+                {
+                  *x1 = x; *y1 = y;
+                  *w = textWidth(string);
+                  *h = fontHeight();
+                }
 
            // Used by library and Smooth font class to extract Unicode point codes from a UTF8 encoded string
   uint16_t decodeUTF8(uint8_t *buf, uint16_t *index, uint16_t remaining),

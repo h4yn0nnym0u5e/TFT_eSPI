@@ -175,7 +175,8 @@
 #define TFT_MISO 12
 #define TFT_MOSI 11
 
-#define TFT_CS   31  // Chip select control
+#define TFT_CS   CS_from_constructor
+//#define TFT_CS   31  // Chip select control
 //#define TFT_DC    PIN_D3  // Data Command control pin
 //#define TFT_RST   PIN_D4  // Reset pin (could connect to NodeMCU RST, see next line)
 #define TFT_RST  -1     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
@@ -364,8 +365,8 @@
 // #define SPI_FREQUENCY   5000000
 // #define SPI_FREQUENCY  10000000
 // #define SPI_FREQUENCY  20000000
-#define SPI_FREQUENCY  27000000
-// #define SPI_FREQUENCY  40000000
+// #define SPI_FREQUENCY  27000000
+#define SPI_FREQUENCY  40000000
 // #define SPI_FREQUENCY  55000000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
 // #define SPI_FREQUENCY  80000000
 
@@ -390,4 +391,4 @@
 // Transactions are automatically enabled by the library for an ESP32 (to use HAL mutex)
 // so changing it here has no effect
 
-// #define SUPPORT_TRANSACTIONS
+#define SUPPORT_TRANSACTIONS

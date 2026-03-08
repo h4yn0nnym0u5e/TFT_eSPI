@@ -429,7 +429,8 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
  //--------------------------------------- public ------------------------------------//
  public:
 
-  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
+  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT, 
+           SPIClass& _spi = SPI, int _cs = -1);
 
   // init() and begin() are equivalent, begin() included for backwards compatibility
   // Sketch defined tab colour option is for ST7735 displays only
@@ -831,7 +832,7 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
 
   // Global variables
 #if !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_INTERFACE)
-  static   SPIClass& getSPIinstance(void); // Get SPI class handle
+  /* static */   SPIClass& getSPIinstance(void); // Get SPI class handle
 #endif
   uint32_t textcolor, textbgcolor;         // Text foreground and background colours
 
@@ -914,6 +915,8 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
 
  //-------------------------------------- protected ----------------------------------//
  protected:
+  SPIClass& spi;
+  int CS_from_constructor{-1};
 
   //int32_t  win_xe, win_ye;          // Window end coords - not needed
 

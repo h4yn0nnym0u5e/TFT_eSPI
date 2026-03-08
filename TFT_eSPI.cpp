@@ -436,7 +436,8 @@ bool TFT_eSPI::clipWindow(int32_t *xs, int32_t *ys, int32_t *xe, int32_t *ye)
 ** Function name:           TFT_eSPI
 ** Description:             Constructor , we must use hardware SPI pins
 ***************************************************************************************/
-TFT_eSPI::TFT_eSPI(int16_t w, int16_t h)
+TFT_eSPI::TFT_eSPI(int16_t w, int16_t h, SPIClass& _spi, int _cs)
+  : spi(_spi), CS_from_constructor(_cs)
 {
   _init_width  = _width  = w; // Set by specific xxxxx_Defines.h file or by users sketch
   _init_height = _height = h; // Set by specific xxxxx_Defines.h file or by users sketch

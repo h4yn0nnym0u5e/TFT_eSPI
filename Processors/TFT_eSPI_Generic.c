@@ -10,7 +10,7 @@
 #ifdef TFT_SPI_PORT
   SPIClass& spi = TFT_SPI_PORT;
 #else
-  SPIClass& spi = SPI;
+  //SPIClass& spi = SPI;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

@@ -25,6 +25,11 @@
         colstart = 35;
         rowstart = 0;
       }
+      else if(_init_width == 76)
+      {
+        colstart = 82;
+        rowstart = 18;
+      }
       else
       {
         colstart = 0;
@@ -58,6 +63,11 @@
       {
         colstart = 0;
         rowstart = 35;
+      }
+      else if(_init_width == 76)
+      {
+        colstart = 18;
+        rowstart = 82;
       }
       else
       {
@@ -93,6 +103,11 @@
         colstart = 35;
         rowstart = 0;
       }
+      else if(_init_width == 76)
+      {
+        colstart = 82;
+        rowstart = 18;
+      } 
       else
       {
         colstart = 0;
@@ -125,6 +140,11 @@
       {
         colstart = 0;
         rowstart = 35;
+      }
+      else if(_init_width == 76)
+      {
+        colstart = 18;
+        rowstart = 82;
       }
       else
       {

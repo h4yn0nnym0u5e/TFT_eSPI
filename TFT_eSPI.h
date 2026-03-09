@@ -105,6 +105,8 @@
   #include "Processors/TFT_eSPI_STM32.h"
 #elif defined(ARDUINO_ARCH_RP2040)
   #include "Processors/TFT_eSPI_RP2040.h"
+#elif defined (TFT_ESPI_TEENSY)
+  #include "Processors/TFT_eSPI_Teensy4.h"
 #else
   #include "Processors/TFT_eSPI_Generic.h"
   #define GENERIC_PROCESSOR
@@ -429,8 +431,11 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
  //--------------------------------------- public ------------------------------------//
  public:
 
-  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT, 
-           SPIClass& _spi = SPI, int _cs = -1);
+  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT
+#if defined(TFT_ESPI_MULTI_SPI)
+           , SPIClass& _spi = SPI, int _cs = -1
+#endif // defined(TFT_ESPI_MULTI_SPI)     
+          );
 
   // init() and begin() are equivalent, begin() included for backwards compatibility
   // Sketch defined tab colour option is for ST7735 displays only
@@ -915,8 +920,10 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
 
  //-------------------------------------- protected ----------------------------------//
  protected:
+#if defined(TFT_ESPI_MULTI_SPI)
   SPIClass& spi;
   int CS_from_constructor{-1};
+#endif // defined(TFT_ESPI_MULTI_SPI)
 
   //int32_t  win_xe, win_ye;          // Window end coords - not needed
 

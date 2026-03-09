@@ -29,6 +29,8 @@
   #include "Processors/TFT_eSPI_STM32.c"
 #elif defined (ARDUINO_ARCH_RP2040)  || defined (ARDUINO_ARCH_MBED) // Raspberry Pi Pico
   #include "Processors/TFT_eSPI_RP2040.c"
+#elif defined (TFT_ESPI_TEENSY)
+  #include "Processors/TFT_eSPI_Teensy4.c"
 #else
   #include "Processors/TFT_eSPI_Generic.c"
 #endif

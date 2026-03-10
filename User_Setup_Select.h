@@ -44,7 +44,7 @@
 
 // Only ONE line below should be uncommented to define your setup.  Add extra lines and files as needed.
 
-#include <User_Setup.h>           // Default setup is root library folder
+// #include <User_Setup.h>           // Default setup is root library folder
 
 //#include <User_Setups/Setup1_ILI9341.h>  // Setup file for ESP8266 configured for my ILI9341
 //#include <User_Setups/Setup2_ST7735.h>   // Setup file for ESP8266 configured for my ST7735
@@ -169,6 +169,7 @@
 
 //#include <User_Setups/SetupX_Template.h>     // Template file for a setup
 
+#include <User_Setups/Setup400_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
 
 //#include <User_Setups/Dustin_ILI9488.h>          // Setup file for Dustin Watts PCB with ILI9488
 //#include <User_Setups/Dustin_ST7796.h>           // Setup file for Dustin Watts PCB with ST7796

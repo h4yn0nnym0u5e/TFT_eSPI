@@ -434,6 +434,7 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT
 #if defined(TFT_ESPI_MULTI_SPI)
            , SPIClass& _spi = SPI, int _cs = -1
+           , void (*_CSfn)(bool negate) = nullptr          
 #endif // defined(TFT_ESPI_MULTI_SPI)     
           );
 
@@ -923,6 +924,7 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
 #if defined(TFT_ESPI_MULTI_SPI)
   SPIClass& spi;
   int CS_from_constructor{-1};
+  void (*CSfn)(bool negate); // method to run to change /CS: parameter LOW asserts /CS, to match digtalWrite()
 #endif // defined(TFT_ESPI_MULTI_SPI)
 
   //int32_t  win_xe, win_ye;          // Window end coords - not needed

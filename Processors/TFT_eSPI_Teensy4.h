@@ -60,8 +60,8 @@
   #define CS_L // No macro allocated so it generates no code
   #define CS_H // No macro allocated so it generates no code
 #else
-  #define CS_L digitalWrite(TFT_CS, LOW)
-  #define CS_H digitalWrite(TFT_CS, HIGH)
+  #define CS_L (nullptr == CSfn)?digitalWrite(TFT_CS, LOW):CSfn(LOW)
+  #define CS_H (nullptr == CSfn)?digitalWrite(TFT_CS, HIGH):CSfn(HIGH)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////

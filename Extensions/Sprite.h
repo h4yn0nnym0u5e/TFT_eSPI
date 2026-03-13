@@ -5,6 +5,8 @@
 // graphics are written to the Sprite rather than the TFT.
 ***************************************************************************************/
 
+#define SPRITE_NO_TRANSPARENCY 0x00FFFFFF // special "transparency colour": no sprite colour is transparent
+
 class TFT_eSprite : public TFT_eSPI {
 
  public:
@@ -94,9 +96,9 @@ class TFT_eSprite : public TFT_eSPI {
   uint8_t  getRotation(void);
 
            // Push a rotated copy of Sprite to TFT with optional transparent colour
-  bool     pushRotated(int16_t angle, uint32_t transp = 0x00FFFFFF);
+  bool     pushRotated(int16_t angle, uint32_t transp = SPRITE_NO_TRANSPARENCY);
            // Push a rotated copy of Sprite to another different Sprite with optional transparent colour
-  bool     pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp = 0x00FFFFFF);
+  bool     pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp = SPRITE_NO_TRANSPARENCY);
 
            // Get the TFT bounding box for a rotated copy of this Sprite
   bool     getRotatedBounds(int16_t angle, int16_t *min_x, int16_t *min_y, int16_t *max_x, int16_t *max_y);

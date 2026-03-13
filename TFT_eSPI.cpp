@@ -3967,7 +3967,7 @@ constexpr float deg2rad      = 3.14159265359/180.0;
 ***************************************************************************************/
 uint16_t TFT_eSPI::drawPixel(int32_t x, int32_t y, uint32_t color, uint8_t alpha, uint32_t bg_color)
 {
-  if (bg_color == 0x00FFFFFF) bg_color = readPixel(x, y);
+  if (bg_color == TFT_READ_BACKGROUND) bg_color = readPixel(x, y);
   color = fastBlend(alpha, color, bg_color);
   drawPixel(x, y, color);
   return color;
@@ -3978,7 +3978,10 @@ uint16_t TFT_eSPI::drawPixel(int32_t x, int32_t y, uint32_t color, uint8_t alpha
 ** Function name:           drawSmoothArc
 ** Description:             Draw a smooth arc clockwise from 6 o'clock
 ***************************************************************************************/
-void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir, uint32_t startAngle, uint32_t endAngle, uint32_t fg_color, uint32_t bg_color, bool roundEnds)
+void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir,
+                             float startAngle, float endAngle, 
+                             uint32_t fg_color, uint32_t bg_color, 
+                             bool roundEnds)
 // Centre at x,y
 // r = arc outer radius, ir = arc inner radius. Inclusive so arc thickness = r - ir + 1
 // Angles in range 0-360
@@ -3988,7 +3991,7 @@ void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir, uint32
 {
   inTransaction = true;
 
-  if (endAngle != startAngle && (startAngle != 0 || endAngle != 360))
+  if (endAngle != startAngle && (startAngle != 0.0f || endAngle != 360.0f))
   {
     float sx = -sinf(startAngle * deg2rad);
     float sy = +cosf(startAngle * deg2rad);
@@ -3997,12 +4000,12 @@ void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir, uint32
 
     if (roundEnds)
     { // Round ends
-      sx = sx * (r + ir)/2.0 + x;
-      sy = sy * (r + ir)/2.0 + y;
+      sx = sx * (r + ir)/2.0f + x;
+      sy = sy * (r + ir)/2.0f + y;
       drawSpot(sx, sy, (r - ir)/2.0, fg_color, bg_color);
 
-      ex = ex * (r + ir)/2.0 + x;
-      ey = ey * (r + ir)/2.0 + y;
+      ex = ex * (r + ir)/2.0f + x;
+      ey = ey * (r + ir)/2.0f + y;
       drawSpot(ex, ey, (r - ir)/2.0, fg_color, bg_color);
     }
     else
@@ -4011,13 +4014,13 @@ void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir, uint32
       float asy = sy * ir + y;
       float aex = sx *  r + x;
       float aey = sy *  r + y;
-      drawWedgeLine(asx, asy, aex, aey, 0.3, 0.3, fg_color, bg_color);
+      drawWedgeLine(asx, asy, aex, aey, 0.3f, 0.3f, fg_color, bg_color);
 
       asx = ex * ir + x;
       asy = ey * ir + y;
       aex = ex *  r + x;
       aey = ey *  r + y;
-      drawWedgeLine(asx, asy, aex, aey, 0.3, 0.3, fg_color, bg_color);
+      drawWedgeLine(asx, asy, aex, aey, 0.3f, 0.3f, fg_color, bg_color);
     }
 
     // Draw arc
@@ -4026,7 +4029,7 @@ void TFT_eSPI::drawSmoothArc(int32_t x, int32_t y, int32_t r, int32_t ir, uint32
   }
   else // Draw full 360
   {
-    drawArc(x, y, r, ir, 0, 360, fg_color, bg_color);
+    drawArc(x, y, r, ir, 0.0f, 360.0f, fg_color, bg_color);
   }
 
   inTransaction = lockTransaction;
@@ -4073,21 +4076,21 @@ inline uint8_t TFT_eSPI::sqrt_fraction(uint32_t num) {
 // smooth is optional, default is true, smooth=false means no antialiasing
 // Note: Arc ends are not anti-aliased (use drawSmoothArc instead for that)
 void TFT_eSPI::drawArc(int32_t x, int32_t y, int32_t r, int32_t ir,
-                       uint32_t startAngle, uint32_t endAngle,
+                       float startAngle, float endAngle,
                        uint32_t fg_color, uint32_t bg_color,
                        bool smooth)
 {
-  if (endAngle   > 360)   endAngle = 360;
-  if (startAngle > 360) startAngle = 360;
+  if (endAngle   > 360.0f)   endAngle = 360.0f;
+  if (startAngle > 360.0f) startAngle = 360.0f;
   if (_vpOoB || startAngle == endAngle) return;
   if (r < ir) transpose(r, ir);  // Required that r > ir
   if (r <= 0 || ir < 0) return;  // Invalid r, ir can be zero (circle sector)
 
   if (endAngle < startAngle) {
     // Arc sweeps through 6 o'clock so draw in two parts
-    if (startAngle < 360) drawArc(x, y, r, ir, startAngle, 360, fg_color, bg_color, smooth);
-    if (endAngle == 0) return;
-    startAngle = 0;
+    if (startAngle < 360.0f) drawArc(x, y, r, ir, startAngle, 360.0f, fg_color, bg_color, smooth);
+    if (endAngle == 0.0f) return;
+    startAngle = 0.0f;
   }
   inTransaction = true;
 
@@ -4120,13 +4123,13 @@ void TFT_eSPI::drawArc(int32_t x, int32_t y, int32_t r, int32_t ir,
   uint32_t slope = (fabscos/(fabssin + minDivisor)) * (float)(1UL<<16);
 
   // Update slope table, add slope for arc start
-  if (startAngle <= 90) {
+  if (startAngle <= 90.0f) {
     startSlope[0] =  slope;
   }
-  else if (startAngle <= 180) {
+  else if (startAngle <= 180.0f) {
     startSlope[1] =  slope;
   }
-  else if (startAngle <= 270) {
+  else if (startAngle <= 270.0f) {
     startSlope[1] = 0xFFFFFFFF;
     startSlope[2] = slope;
   }
@@ -4144,16 +4147,16 @@ void TFT_eSPI::drawArc(int32_t x, int32_t y, int32_t r, int32_t ir,
   slope   = (uint32_t)((fabscos/(fabssin + minDivisor)) * (float)(1UL<<16));
 
   // Work out which quadrants will need to be drawn and add slope for arc end
-  if (endAngle <= 90) {
+  if (endAngle <= 90.0f) {
     endSlope[0] = slope;
     endSlope[1] =  0;
     startSlope[2] =  0;
   }
-  else if (endAngle <= 180) {
+  else if (endAngle <= 180.0f) {
     endSlope[1] = slope;
     startSlope[2] =  0;
   }
-  else if (endAngle <= 270) {
+  else if (endAngle <= 270.0f) {
     endSlope[2] =  slope;
   }
   else {
@@ -4229,10 +4232,10 @@ void TFT_eSPI::drawArc(int32_t x, int32_t y, int32_t r, int32_t ir,
   }
 
   // Fill in centre lines
-  if (startAngle ==   0 || endAngle == 360) drawFastVLine(x, y + r - w, w, fg_color); // Bottom
-  if (startAngle <=  90 && endAngle >=  90) drawFastHLine(x - r + 1, y, w, fg_color); // Left
-  if (startAngle <= 180 && endAngle >= 180) drawFastVLine(x, y - r + 1, w, fg_color); // Top
-  if (startAngle <= 270 && endAngle >= 270) drawFastHLine(x + r - w, y, w, fg_color); // Right
+  if (startAngle ==   0.0f || endAngle == 360.0f) drawFastVLine(x, y + r - w, w, fg_color); // Bottom
+  if (startAngle <=  90.0f && endAngle >=  90.0f) drawFastHLine(x - r + 1, y, w, fg_color); // Left
+  if (startAngle <= 180.0f && endAngle >= 180.0f) drawFastVLine(x, y - r + 1, w, fg_color); // Top
+  if (startAngle <= 270.0f && endAngle >= 270.0f) drawFastHLine(x + r - w, y, w, fg_color); // Right
 
   inTransaction = lockTransaction;
   end_tft_write();
@@ -4280,7 +4283,7 @@ void TFT_eSPI::fillSmoothCircle(int32_t x, int32_t y, int32_t r, uint32_t color,
       xs = cx;
       if (alpha < 9) continue;
 
-      if (bg_color == 0x00FFFFFF) {
+      if (bg_color == TFT_READ_BACKGROUND) {
         drawPixel(x + cx - r, y + cy - r, color, alpha, bg_color);
         drawPixel(x - cx + r, y + cy - r, color, alpha, bg_color);
         drawPixel(x - cx + r, y - cy + r, color, alpha, bg_color);
@@ -4532,7 +4535,7 @@ void TFT_eSPI::drawWedgeLine(float ax, float ay, float bx, float by, float ar, f
         continue;
       }
       //Blend color with background and plot
-      if (bg_color == 0x00FFFFFF) {
+      if (bg_color == TFT_READ_BACKGROUND) {
         bg = readPixel(xp, yp); swin = true;
       }
       #ifdef GC9A01_DRIVER
@@ -4570,7 +4573,7 @@ void TFT_eSPI::drawWedgeLine(float ax, float ay, float bx, float by, float ar, f
         continue;
       }
       //Blend colour with background and plot
-      if (bg_color == 0x00FFFFFF) {
+      if (bg_color == TFT_READ_BACKGROUND) {
         bg = readPixel(xp, yp); swin = true;
       }
       #ifdef GC9A01_DRIVER

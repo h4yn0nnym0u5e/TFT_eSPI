@@ -414,7 +414,7 @@ bool TFT_eSprite::pushRotated(int16_t angle, uint32_t transp)
   uint32_t ye = _dheight << FP_SCALE;
   uint16_t tpcolor = (uint16_t)transp;
 
-  if (transp != 0x00FFFFFF) {
+  if (transp != SPRITE_NO_TRANSPARENCY) {
     if (_bpp == 4) tpcolor = _colorMap[transp & 0x0F];
     tpcolor = tpcolor>>8 | tpcolor<<8; // Working with swapped color bytes
   }
@@ -436,7 +436,7 @@ bool TFT_eSprite::pushRotated(int16_t angle, uint32_t transp)
       int32_t yp = ys >> FP_SCALE;
       if (_bpp == 16) {rp = _img[xp + yp * _iwidth]; }
       else { rp = readPixel(xp, yp); rp = (uint16_t)(rp>>8 | rp<<8); }
-      if (transp != 0x00FFFFFF && tpcolor == rp) {
+      if (transp != SPRITE_NO_TRANSPARENCY && tpcolor == rp) {
         if (pixel_count) {
           // TFT window is already clipped, so this is faster than pushImage()
           _tft->setWindow(x - pixel_count, y, x - 1, y);
@@ -488,7 +488,7 @@ bool TFT_eSprite::pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp)
   uint32_t ye = _dheight << FP_SCALE;
   uint16_t tpcolor = (uint16_t)transp;
   
-  if (transp != 0x00FFFFFF) {
+  if (transp != SPRITE_NO_TRANSPARENCY) {
     if (_bpp == 4) tpcolor = _colorMap[transp & 0x0F];
     tpcolor = tpcolor>>8 | tpcolor<<8; // Working with swapped color bytes
   }
@@ -512,7 +512,7 @@ bool TFT_eSprite::pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp)
       int32_t yp = ys >> FP_SCALE;
       if (_bpp == 16) rp = _img[xp + yp * _iwidth];
       else { rp = readPixel(xp, yp); rp = (uint16_t)(rp>>8 | rp<<8); }
-      if (transp != 0x00FFFFFF && tpcolor == rp) {
+      if (transp != SPRITE_NO_TRANSPARENCY && tpcolor == rp) {
         if (pixel_count) {
           spr->pushImage(x - pixel_count, y, pixel_count, 1, sline_buffer);
           pixel_count = 0;

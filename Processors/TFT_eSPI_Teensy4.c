@@ -389,6 +389,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::DMA_ISR(void)
   pDMA->clearInterrupt();
   if (nullptr != currentDMAtft)
     currentDMAtft->callCompletionISR();
+  asm volatile ("dsb":::"memory"); // ensure interrupt is cleared
 }
 
 
@@ -410,6 +411,11 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::SPI2_DMA_ISR(void)
 }
 
 
+/*
+ * Prepare the DMA channel for the transfer
+ * Sets up source address, SPI transmit register, trigger and interrupts.
+ * Also flushes the source cache to RAM
+ */
 void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft)
 {
   int mainTransfer = pixels / LOOP_MINOR_PIXELS;

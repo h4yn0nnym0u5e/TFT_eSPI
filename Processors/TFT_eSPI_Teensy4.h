@@ -100,6 +100,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // Macros to write commands/pixel colour data to a SPI ILI948x TFT
 ////////////////////////////////////////////////////////////////////////////////////////
+// How to access SPI:
+#define spi spi_dma.getSPI()
+
 #if  defined (SPI_18BIT_DRIVER) // SPI 18-bit colour
 
   // Write 8 bits to TFT
@@ -190,5 +193,98 @@
   #define tft_Read_8() spi.transfer(0)
 #endif
 
+#undef spi // done with sleazy hack
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Teensy 4.x DMA-related stuff
+////////////////////////////////////////////////////////////////////////////////////////
+// Ngleton class to ensure clean access to one of the 
+// three SPI busses, even if multiple displays are in use
+class TFT_eSPI_Teensy4_SPI_with_DMA
+{
+    const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
+    
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
+
+    uint32_t _spi_fcr_save;
+    uint32_t _spi_tcr_current;
+    uint32_t _tcr_dc_assert;
+    uint32_t _tcr_dc_not_assert;
+    uint32_t _dcpinmask;
+    volatile uint32_t *_dcport;
+    bool cleanupIsNeeded; // cleanup not done after transfer
+    bool DMAidle;
+
+    SPIClass* pSPI;
+    DMAChannel* pDMA;
+    IMXRT_LPSPI_t*  hardware; // actual peripheral
+    const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
+  public:
+    TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
+
+    SPIClass&   getSPI(void) { return *pSPI; }      
+    DMAChannel& getDMA(void) { return *pDMA; }
+    IMXRT_LPSPI_t& getHardware(void) { return *hardware; }
+
+    void maybeUpdateTCR(uint32_t requested_tcr_state);
+    void prepSPIforDMA(void);
+    bool SPItransmitComplete(void);
+    void fixupSPIafterDMA(void);
+    void prepDMAtransfer(uint16_t* image, int pixels);
+    void startDMAtransfer(void);
+    void finishDMAtransfer(void);
+    bool cleanupNeeded(void) { return cleanupIsNeeded; }
+    
+    void initDMA(void);
+    void deInitDMA(void) { delete pDMA; }
+    bool dmaBusy(void);
+    void dmaWait(void);
+
+};
+
+class TFT_eSPI_Teensy4_SPD_Factory
+{
+    TFT_eSPI_Teensy4_SPD_Factory() {} // hide constructor
+
+    // we implement 3 SPI buses for now
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI(SPIClass& s)
+    {
+      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI4_ADDRESS, 
+                  SPIClass::spiclass_lpspi4_hardware};
+      return spi;
+    }
+
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI1(SPIClass& s)
+    {
+      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI3_ADDRESS, 
+                  SPIClass::spiclass_lpspi3_hardware};
+      return spi;
+    }
+
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI2(SPIClass& s)
+    {
+      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI1_ADDRESS, 
+                  SPIClass::spiclass_lpspi1_hardware};
+      return spi;
+    }
+
+  public:
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(SPIClass& spi)
+    {
+      SPIClass* s = &spi;
+
+      if (s == &SPI1)
+          return getSPI1(*s);
+      else if (s == &SPI2)
+          return getSPI2(*s);
+
+      // if (s == &SPI)
+      return getSPI(*s); // must return something!     
+    }
+
+    // publicly disable copy and assignment
+    TFT_eSPI_Teensy4_SPD_Factory(TFT_eSPI_Teensy4_SPD_Factory const&) = delete;
+    void operator=(TFT_eSPI_Teensy4_SPD_Factory const&)               = delete;
+  };
 
 #endif // _TFT_eSPI_TEENSYH_ : Header end

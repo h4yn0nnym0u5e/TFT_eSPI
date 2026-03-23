@@ -486,6 +486,9 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h
 #if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
   if (psramFound()) _psram_enable = true; // Enable the use of PSRAM (if available)
   else
+#elif defined(ARDUINO_TEENSY41)
+  if (external_psram_size > 0) _psram_enable = true; // allowed to use PSRAM, we have some
+  else
 #endif
   _psram_enable = false;
 

@@ -170,6 +170,12 @@ void* TFT_eSprite::callocSprite(int16_t w, int16_t h, uint8_t frames)
       //Serial.println("PSRAM");
     }
     else
+#elif defined(ARDUINO_TEENSY41)  
+    if (_psram_enable && _preferPSRAM)
+    {
+      ptr8 = ( uint8_t*) extmem_calloc(frames * w * h + frames, sizeof(uint16_t));
+    }
+    else
 #endif
     {
       ptr8 = ( uint8_t*) calloc(frames * w * h + frames, sizeof(uint16_t));

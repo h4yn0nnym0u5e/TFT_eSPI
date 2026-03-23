@@ -22,6 +22,7 @@ class TFT_eSprite : public TFT_eSPI {
            //  - 1 byte per pixel for 8-bit colour (332 RGB format)
            //  - 2 bytes per pixel for 16-bit color depth (565 RGB format)
   void*    createSprite(int16_t width, int16_t height, uint8_t frames = 1);
+  void     createInPSRAM(bool b) { _preferPSRAM = b; }
 
            // Returns a pointer to the sprite or nullptr if not created, user must cast to pointer type
   void*    getPointer(void);
@@ -181,6 +182,7 @@ class TFT_eSprite : public TFT_eSPI {
   bool     _created; // A Sprite has been created and memory reserved
   bool     _gFont = false; 
   bool     _spriteSwapBytes; // swap bytes when creating 16bpp images
+  bool     _preferPSRAM; // prefer to create sprite buffer in PSRAM if available
 
   int32_t  _xs, _ys, _xe, _ye, _xptr, _yptr; // for setWindow
   int32_t  _sx, _sy; // x,y for scroll zone

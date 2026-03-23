@@ -812,6 +812,9 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
            // Check if the DMA is complete - use while(tft.dmaBusy); for a blocking wait
   bool     dmaBusy(void); // returns true if DMA is still in progress
   void     dmaWait(void); // wait until DMA is complete
+#if defined(TFT_ESPI_TEENSY)  // Teensy-specific methods
+  void     dmaAttachCompletionISR(void (*isr)(TFT_eSPI& which)) { _completionISR = isr; }
+#endif // defined(TFT_ESPI_TEENSY)
 
   bool     DMA_Enabled = false;   // Flag for DMA enabled state
   uint8_t  spiBusyCheck = 0;      // Number of ESP32 transfer buffers to check
@@ -929,6 +932,9 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   int CS_from_constructor{-1};
   void (*CSfn)(bool negate); // method to run to change /CS: parameter LOW asserts /CS, to match digtalWrite()
 #endif // defined(TFT_ESPI_MULTI_SPI)
+#if defined(TFT_ESPI_TEENSY)  // Teensy-specific variable
+  void (*_completionISR)(TFT_eSPI& which);
+#endif // defined(TFT_ESPI_TEENSY)
 
   //int32_t  win_xe, win_ye;          // Window end coords - not needed
 

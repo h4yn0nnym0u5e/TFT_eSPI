@@ -345,13 +345,13 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepSPIforDMA(void)
   cleanupIsNeeded = true;
 }
 
+
 void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
 {
   waitTransmitComplete();
 
-  // Serial.println("Restore FCR");
-  hardware->FCR = LPSPI_FCR_TXWATER(
-      15);              // _spi_fcr_save;	// restore the FSR status...
+  hardware->FCR = LPSPI_FCR_TXWATER(15); 
+                   // _spi_fcr_save;	// restore the FSR status...
   hardware->DER = 0; // DMA no longer doing TX (or RX)
 
   hardware->CR =
@@ -360,14 +360,11 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
 
   maybeUpdateTCR(_tcr_dc_assert |
                   LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
-  // Serial.printf("Output NOP (SR %x CR %x FSR %x FCR %x %x TCR:%x)\n",
-  // _pimxrt_spi->SR, _pimxrt_spi->CR, _pimxrt_spi->FSR,
-  //	_pimxrt_spi->FCR, _spi_fcr_save, _pimxrt_spi->TCR);
   hardware->TDR = TFT_NOP; // transmit NOP command
-  // endSPITransaction();
 
   cleanupIsNeeded = false;
 }
+
 
 void dumpDMA_TCD(DMABaseClass *dmabc)
 {
@@ -385,9 +382,9 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
 {
   int mainTransfer = pixels / LOOP_MINOR_PIXELS;
   
-  pDMA->sourceBuffer(image,mainTransfer * sizeof *image); // pretend its fewer...
-  pDMA->destination(hardware->TDR);  // this is our destination: SPI transmit register
-  pDMA->TCD->NBYTES = sizeof *image * LOOP_MINOR_PIXELS; // ...then bump up minor loop size
+  pDMA->sourceBuffer(image, mainTransfer * sizeof *image); // pretend its fewer writes...
+  pDMA->destination(hardware->TDR);  // this is our destination: SPI transmit register (may stuff NBYTES)
+  pDMA->TCD->NBYTES = sizeof *image * LOOP_MINOR_PIXELS;   // ...then bump up minor loop size
   pDMA->TCD->ATTR_DST = 1; // and say the destination size is 16 bits
   pDMA->triggerAtHardwareEvent(SPIattr.tx_dma_channel);    // pick the correct event to trigger DMA
   pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts

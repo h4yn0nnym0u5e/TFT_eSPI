@@ -13,6 +13,7 @@
 #define PROCESSOR_ID 0x40
 #else
 #define PROCESSOR_ID 0x41
+extern uint8_t external_psram_size;
 #endif // defined(ARDUINO_TEENSY40)
 
 
@@ -237,10 +238,9 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     bool cleanupNeeded(void) { return cleanupIsNeeded; }
     
     void initDMA(void);
-    void deInitDMA(void) { delete pDMA; }
+    void deInitDMA(void) { delete pDMA; pDMA = nullptr; }
     bool dmaBusy(void);
     void dmaWait(void);
-
 };
 
 class TFT_eSPI_Teensy4_SPD_Factory

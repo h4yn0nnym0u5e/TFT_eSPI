@@ -201,11 +201,17 @@ extern uint8_t external_psram_size;
 ////////////////////////////////////////////////////////////////////////////////////////
 // Ngleton class to ensure clean access to one of the 
 // three SPI busses, even if multiple displays are in use
+class TFT_eSPI;
 class TFT_eSPI_Teensy4_SPI_with_DMA
 {
     const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
 
     void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
+
+    static void SPI_DMA_ISR(void);
+    static void SPI1_DMA_ISR(void);
+    static void SPI2_DMA_ISR(void);
+    void DMA_ISR(void);
 
     uint32_t _spi_fcr_save;
     uint32_t _spi_tcr_current;
@@ -216,6 +222,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     bool cleanupIsNeeded; // cleanup not done after transfer
     bool DMAidle;
 
+    TFT_eSPI* currentDMAtft;
     SPIClass* pSPI;
     DMAChannel* pDMA;
     IMXRT_LPSPI_t*  hardware; // actual peripheral
@@ -232,7 +239,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     void prepSPIforDMA(void);
     bool SPItransmitComplete(void);
     void fixupSPIafterDMA(void);
-    void prepDMAtransfer(uint16_t* image, int pixels);
+    void prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
     void startDMAtransfer(void);
     void finishDMAtransfer(void);
     bool cleanupNeeded(void) { return cleanupIsNeeded; }

@@ -932,8 +932,10 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   int CS_from_constructor{-1};
   void (*CSfn)(bool negate); // method to run to change /CS: parameter LOW asserts /CS, to match digtalWrite()
 #endif // defined(TFT_ESPI_MULTI_SPI)
-#if defined(TFT_ESPI_TEENSY)  // Teensy-specific variable
+#if defined(TFT_ESPI_TEENSY)  // Teensy-specific stuff
+  friend class TFT_eSPI_Teensy4_SPI_with_DMA;
   void (*_completionISR)(TFT_eSPI& which);
+  void callCompletionISR(void) { if (nullptr != _completionISR) (*_completionISR)(*this); }
 #endif // defined(TFT_ESPI_TEENSY)
 
   //int32_t  win_xe, win_ye;          // Window end coords - not needed

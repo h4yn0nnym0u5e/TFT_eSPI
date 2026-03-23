@@ -260,10 +260,10 @@ void TFT_eSPI::pushPixels(const void* data_in, uint32_t len){
 // a major loop count of k.
 TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr) 
       : cleanupIsNeeded{false}, DMAidle{true},
+        currentDMAtft{nullptr},
         pSPI(&spi), pDMA(nullptr), 
         hardware{(IMXRT_LPSPI_t*) phw},
         SPIattr{attr}
-
 {
   int _rs = TFT_DC;
 
@@ -329,6 +329,12 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::initDMA(void)
   if (nullptr != pDMA)
   {
     pDMA->begin();
+    if (pSPI == &SPI)
+      pDMA->attachInterrupt(SPI_DMA_ISR);
+    else if (pSPI == &SPI1)
+      pDMA->attachInterrupt(SPI1_DMA_ISR);
+    if (pSPI == &SPI2)
+      pDMA->attachInterrupt(SPI2_DMA_ISR);
   }
 }
 
@@ -378,7 +384,33 @@ void dumpDMA_TCD(DMABaseClass *dmabc)
 }
 
 
-void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
+void TFT_eSPI_Teensy4_SPI_with_DMA::DMA_ISR(void)
+{ 
+  pDMA->clearInterrupt();
+  if (nullptr != currentDMAtft)
+    currentDMAtft->callCompletionISR();
+}
+
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::SPI_DMA_ISR(void) 
+{
+  TFT_eSPI_Teensy4_SPD_Factory::getInstance(SPI).DMA_ISR();
+}
+
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::SPI1_DMA_ISR(void) 
+{
+  TFT_eSPI_Teensy4_SPD_Factory::getInstance(SPI2).DMA_ISR();
+}
+
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::SPI2_DMA_ISR(void) 
+{
+  TFT_eSPI_Teensy4_SPD_Factory::getInstance(SPI2).DMA_ISR();
+}
+
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft)
 {
   int mainTransfer = pixels / LOOP_MINOR_PIXELS;
   
@@ -387,7 +419,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
   pDMA->TCD->NBYTES = sizeof *image * LOOP_MINOR_PIXELS;   // ...then bump up minor loop size
   pDMA->TCD->ATTR_DST = 1; // and say the destination size is 16 bits
   pDMA->triggerAtHardwareEvent(SPIattr.tx_dma_channel);    // pick the correct event to trigger DMA
-  pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts
+  pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts for now
   pDMA->disableOnCompletion(); // disable DMA when done
 
   dumpDMA_TCD(pDMA);
@@ -401,8 +433,14 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
     chain.sourceBuffer(image + mainTransfer,pixels * sizeof *image); // last few pixels
     pDMA->replaceSettingsOnCompletion(chain);
     pDMA->TCD->CSR &= ~DMA_TCD_CSR_DREQ; // don't disable on completion of first transfer
+    chain.interruptAtCompletion(); // interrupt after odd size mop-up transfer
   }
+  else
+    pDMA->interruptAtCompletion(); // just main transfer - interrupt after that
+
+  currentDMAtft = &tft; // stash pointer to the display that's currently using the DMA+SPI
 }
+
 
 void TFT_eSPI_Teensy4_SPI_with_DMA::startDMAtransfer(void)
 {
@@ -417,6 +455,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::finishDMAtransfer(void)
   pDMA->clearComplete();
   pDMA->disable(); // just in case
   DMAidle = true;
+  currentDMAtft = nullptr;
 }
 
 bool TFT_eSPI_Teensy4_SPI_with_DMA::dmaBusy(void) 
@@ -428,7 +467,13 @@ bool TFT_eSPI_Teensy4_SPI_with_DMA::dmaBusy(void)
 
 //==================================================================================
 // Minimal function set to support DMA:
-bool TFT_eSPI::initDMA(bool ctrl_cs) { spi_dma.initDMA(); DMA_Enabled=true; return true; }
+bool TFT_eSPI::initDMA(bool ctrl_cs) 
+{ 
+  spi_dma.initDMA(); 
+  DMA_Enabled=true; 
+  return true; 
+}
+
 void TFT_eSPI::deInitDMA(void) { DMA_Enabled=false; /* spi_dma.getDMA().release(); */ }
 
 // return true until DMA has completed and SPI FIFO is empty,
@@ -459,7 +504,7 @@ Serial.println("\ndmaWait");
   dmaWait(); // should take no time as long as previous DMA is finished
 
 Serial.println("prepDMA");
-  spi_dma.prepDMAtransfer(image, len);  // get DMA channel ready
+  spi_dma.prepDMAtransfer(image, len, *this);  // get DMA channel ready
 
 
 Serial.println("begin SPI transaction");

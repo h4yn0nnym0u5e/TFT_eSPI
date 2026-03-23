@@ -35,6 +35,9 @@ class TFT_eSprite : public TFT_eSPI {
            // Select the frame buffer for graphics write (for 2 colour ePaper and DMA toggle buffer)
            // Returns a pointer to the Sprite frame buffer
   void*    frameBuffer(int8_t f);
+
+           // optionally swap bytes while drawing into Sprite memory: default true
+  void     setSpriteSwapBytes(bool b) { _spriteSwapBytes = b; }
   
            // Set or get the colour depth to 1, 4, 8 or 16 bits. Can be used to change depth an existing
            // sprite, but clears it to black, returns a new pointer if sprite is re-created.
@@ -177,6 +180,7 @@ class TFT_eSprite : public TFT_eSPI {
 
   bool     _created; // A Sprite has been created and memory reserved
   bool     _gFont = false; 
+  bool     _spriteSwapBytes; // swap bytes when creating 16bpp images
 
   int32_t  _xs, _ys, _xe, _ye, _xptr, _yptr; // for setWindow
   int32_t  _sx, _sy; // x,y for scroll zone

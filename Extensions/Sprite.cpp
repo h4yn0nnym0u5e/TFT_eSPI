@@ -25,6 +25,7 @@ TFT_eSprite::TFT_eSprite(TFT_eSPI *tft)
 
   _created = false;
   _vpOoB   = true;
+  _spriteSwapBytes = true;
 
   _xs = 0;  // window bounds for pushColor
   _ys = 0;
@@ -970,7 +971,8 @@ uint16_t TFT_eSprite::readPixel(int32_t x, int32_t y)
   if (_bpp == 16)
   {
     uint16_t color = _img[x + y * _iwidth];
-    return (color >> 8) | (color << 8);
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
+    return color;
   }
 
   if (_bpp == 8)
@@ -1293,8 +1295,10 @@ void TFT_eSprite::pushColor(uint16_t color)
 
   // Write the colour to RAM in set window
   if (_bpp == 16)
-    _img [_xptr + _yptr * _iwidth] = (uint16_t) (color >> 8) | (color << 8);
-
+  {
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
+    _img [_xptr + _yptr * _iwidth] = color;
+  }
   else  if (_bpp == 8)
     _img8[_xptr + _yptr * _iwidth] = (uint8_t )((color & 0xE000)>>8 | (color & 0x0700)>>6 | (color & 0x0018)>>3);
 
@@ -1639,7 +1643,7 @@ void TFT_eSprite::drawPixel(int32_t x, int32_t y, uint32_t color)
 
   if (_bpp == 16)
   {
-    color = (color >> 8) | (color << 8);
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
     _img[x+y*_iwidth] = (uint16_t) color;
   }
   else if (_bpp == 8)
@@ -1763,7 +1767,7 @@ void TFT_eSprite::drawFastVLine(int32_t x, int32_t y, int32_t h, uint32_t color)
 
   if (_bpp == 16)
   {
-    color = (color >> 8) | (color << 8);
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
     int32_t yp = x + _iwidth * y;
     while (h--) {_img[yp] = (uint16_t) color; yp += _iwidth;}
   }
@@ -1824,7 +1828,7 @@ void TFT_eSprite::drawFastHLine(int32_t x, int32_t y, int32_t w, uint32_t color)
 
   if (_bpp == 16)
   {
-    color = (color >> 8) | (color << 8);
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
     while (w--) _img[_iwidth * y + x++] = (uint16_t) color;
   }
   else if (_bpp == 8)
@@ -1891,7 +1895,7 @@ void TFT_eSprite::fillRect(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t 
 
   if (_bpp == 16)
   {
-    color = (color >> 8) | (color << 8);
+    if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
     uint32_t iw = w;
     int32_t ys = yp;
     if(h--)  {while (iw--) _img[yp++] = (uint16_t) color;}
@@ -2276,7 +2280,7 @@ int16_t TFT_eSprite::drawChar(uint16_t uniCode, int32_t x, int32_t y, uint8_t fo
   {
     w *= height; // Now w is total number of pixels in the character
     int16_t color = textcolor;
-    if (_bpp == 16) color = (textcolor >> 8) | (textcolor << 8);
+    if (_bpp == 16 && _spriteSwapBytes) color = (textcolor >> 8) | (textcolor << 8);
     else if (_bpp == 8) color = ((textcolor & 0xE000)>>8 | (textcolor & 0x0700)>>6 | (textcolor & 0x0018)>>3);
 
     int16_t bgcolor = textbgcolor;

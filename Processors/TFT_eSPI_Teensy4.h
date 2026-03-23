@@ -203,7 +203,7 @@
 class TFT_eSPI_Teensy4_SPI_with_DMA
 {
     const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
-    
+
     void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
 
     uint32_t _spi_fcr_save;
@@ -219,6 +219,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     DMAChannel* pDMA;
     IMXRT_LPSPI_t*  hardware; // actual peripheral
     const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
+    DMASetting chain; // settings to chain to for last few pixels
   public:
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
 

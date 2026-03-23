@@ -384,9 +384,8 @@ void dumpDMA_TCD(DMABaseClass *dmabc)
 void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
 {
   int mainTransfer = pixels / LOOP_MINOR_PIXELS;
-  mainTransfer = pixels - mainTransfer * LOOP_MINOR_PIXELS;
-
-  pDMA->sourceBuffer(image,pixels * sizeof *image / LOOP_MINOR_PIXELS); // pretend its fewer...
+  
+  pDMA->sourceBuffer(image,mainTransfer * sizeof *image); // pretend its fewer...
   pDMA->destination(hardware->TDR);  // this is our destination: SPI transmit register
   pDMA->TCD->NBYTES = sizeof *image * LOOP_MINOR_PIXELS; // ...then bump up minor loop size
   pDMA->TCD->ATTR_DST = 1; // and say the destination size is 16 bits
@@ -398,6 +397,14 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels)
   arm_dcache_flush(image, pixels * sizeof *image);
 
   // More code needed here for odd sizes!
+  pixels = pixels - mainTransfer * LOOP_MINOR_PIXELS; // remaining pixels
+  if (pixels > 0) // if some left, will be 1 - LOOP_MINOR_PIXELS-1
+  {
+    chain = *pDMA; // copy main transfer settings
+    chain.sourceBuffer(image + mainTransfer,pixels * sizeof *image); // last few pixels
+    pDMA->replaceSettingsOnCompletion(chain);
+    pDMA->TCD->CSR &= ~DMA_TCD_CSR_DREQ; // don't disable on completion of first transfer
+  }
 }
 
 void TFT_eSPI_Teensy4_SPI_with_DMA::startDMAtransfer(void)

@@ -8,6 +8,13 @@
 #ifndef _TFT_eSPI_TEENSYH_
 #define _TFT_eSPI_TEENSYH_
 
+// We would
+// #include <core_cm7.h>
+// but it doesn't work, so
+#define SCB_ICSR_VECTACTIVE_Pos             0U                                            /*!< SCB ICSR: VECTACTIVE Position */
+#define SCB_ICSR_VECTACTIVE_Msk            (0x1FFUL /*<< SCB_ICSR_VECTACTIVE_Pos*/)       /*!< SCB ICSR: VECTACTIVE Mask */
+
+
 // Processor ID reported by getSetup()
 #if defined(ARDUINO_TEENSY40)
 #define PROCESSOR_ID 0x40
@@ -26,7 +33,7 @@ extern uint8_t external_psram_size;
 #define SET_BUS_READ_MODE  // Not used
 
 // Code to check if DMA is busy, used by SPI bus transaction startWrite and endWrite functions
-#define DMA_BUSY_CHECK // Not used so leave blank
+#define DMA_BUSY_CHECK dmaWait()
 
 // To be safe, SUPPORT_TRANSACTIONS is assumed mandatory
 #if !defined (SUPPORT_TRANSACTIONS)
@@ -50,8 +57,8 @@ extern uint8_t external_psram_size;
   #define DC_C // No macro allocated so it generates no code
   #define DC_D // No macro allocated so it generates no code
 #else
-  #define DC_C digitalWrite(TFT_DC, LOW)
-  #define DC_D digitalWrite(TFT_DC, HIGH)
+  #define DC_C spi_dma.DCcmd()  // digitalWrite(TFT_DC, LOW)
+  #define DC_D spi_dma.DCdata() // digitalWrite(TFT_DC, HIGH)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +236,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
     DMASetting chain; // settings to chain to for last few pixels
   public:
+    bool echoTCR;
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
 
     SPIClass&   getSPI(void) { return *pSPI; }      
@@ -243,6 +251,8 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     void startDMAtransfer(void);
     void finishDMAtransfer(void);
     bool cleanupNeeded(void) { return cleanupIsNeeded; }
+    void DCcmd(void);
+    void DCdata(void);
     
     void initDMA(void);
     void deInitDMA(void) { delete pDMA; pDMA = nullptr; }

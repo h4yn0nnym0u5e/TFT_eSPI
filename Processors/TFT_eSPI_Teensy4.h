@@ -41,7 +41,7 @@ extern uint8_t external_psram_size;
 #endif
 
 // Initialise processor specific SPI functions, used by init()
-#define INIT_TFT_DATA_BUS
+#define INIT_TFT_DATA_BUS spi_dma.begin()
 
 // If smooth fonts are enabled the filing system may need to be loaded
 #ifdef SMOOTH_FONT
@@ -238,6 +238,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
   public:
     bool echoTCR;
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
+    void begin();
 
     SPIClass&   getSPI(void) { return *pSPI; }      
     DMAChannel& getDMA(void) { return *pDMA; }

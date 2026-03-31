@@ -924,7 +924,7 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   bool     locked, inTransaction, lockTransaction; // SPI transaction and mutex lock flags
 
  //-------------------------------------- protected ----------------------------------//
- protected:
+ public: // protected:
 #if defined(TFT_ESPI_MULTI_SPI)
   SPIClass& spi;
   static TFT_eSPI_Teensy4_SPD_Factory factory;

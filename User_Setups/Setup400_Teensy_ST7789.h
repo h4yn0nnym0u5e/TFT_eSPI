@@ -121,7 +121,8 @@
 
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP8266 SETUP ######
 
-#define TFT_DC   10 // this IS used: pin 10 should give optimised SPI transactions
+#define TFT_DC   10 // this IS used: pin 10 should give optimised SPI transactions...
+#define TFT_DC_MANAGED // ... if this symbol is defined - means its setting MUST NOT be changed
 
 // For Teensy the SPI instance used in the constructor will determine the pins,
 // but we leave this here for information (numbers are for SPI, not SPI1 or SPI2)

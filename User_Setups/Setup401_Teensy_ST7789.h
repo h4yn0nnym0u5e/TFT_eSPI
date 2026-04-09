@@ -173,14 +173,15 @@
 //
 // ##################################################################################
 
-// #define SPI_FREQUENCY   1000000
-// #define SPI_FREQUENCY   5000000
-// #define SPI_FREQUENCY  10000000
-// #define SPI_FREQUENCY  20000000
-// #define SPI_FREQUENCY  27000000
-#define SPI_FREQUENCY  40000000
-// #define SPI_FREQUENCY  55000000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
-// #define SPI_FREQUENCY  80000000
+// #define SPI_FREQUENCY   1'000'000
+// #define SPI_FREQUENCY   5'000'000
+// #define SPI_FREQUENCY  10'000'000
+// #define SPI_FREQUENCY  16'000'000
+// #define SPI_FREQUENCY  20'000'000
+// #define SPI_FREQUENCY  27'000'000
+#define SPI_FREQUENCY  40'000'000
+// #define SPI_FREQUENCY  55'000'000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
+// #define SPI_FREQUENCY  80'000'000
 
 // Optional reduced SPI frequency for reading TFT
 #define SPI_READ_FREQUENCY  20000000

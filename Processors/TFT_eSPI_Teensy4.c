@@ -280,9 +280,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::begin(void)
 	 	dc_cs_index--;	// convert to 0 based
 		_tcr_dc_assert = LPSPI_TCR_PCS(dc_cs_index);
     _tcr_dc_not_assert = LPSPI_TCR_PCS(3);
-		Serial.printf("dc_cs_index: %02X\n", dc_cs_index);
 	} else {
-		Serial.println("DC not dealt with in hardware");
 		_dcport = portOutputRegister(_rs);
 		_dcpinmask = digitalPinToBitMask(_rs);
 		pinMode(_rs, OUTPUT);	
@@ -318,8 +316,6 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::maybeUpdateTCR(uint32_t requested_tcr_state)
 {
   if ((_spi_tcr_current & TCR_MASK) != requested_tcr_state) 
   {
-    if (echoTCR)
-      Serial.print("...");
     bool dc_state_change = (_spi_tcr_current & LPSPI_TCR_PCS(3)) != (requested_tcr_state & LPSPI_TCR_PCS(3));
     _spi_tcr_current = (_spi_tcr_current & ~TCR_MASK) | requested_tcr_state;
 
@@ -341,8 +337,6 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::maybeUpdateTCR(uint32_t requested_tcr_state)
     }
 //    Serial.printf("SPI TCR is %08X\n", hardware->TCR);
   }
-  if (echoTCR)
-    Serial.printf("TCR: %08X (%08X)\n",hardware->TCR, requested_tcr_state);
 }
 
 void TFT_eSPI_Teensy4_SPI_with_DMA::DCcmd(void)
@@ -589,9 +583,6 @@ void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h,
     buffer = image;
   else
     memcpy(buffer, image, pixels * sizeof *buffer);
-  //spi_dma.echoTCR = true;
   setAddrWindow(x,y,w,h);
-  spi_dma.echoTCR = false;
-  Serial.println();
   pushPixelsDMA((uint16_t*) buffer,pixels);
 }

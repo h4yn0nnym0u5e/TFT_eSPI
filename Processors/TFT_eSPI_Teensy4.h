@@ -235,7 +235,6 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
     DMASetting chain; // settings to chain to for last few pixels
   public:
-    bool echoTCR;
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
     void begin();
 

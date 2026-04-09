@@ -123,6 +123,19 @@ void* TFT_eSprite::getPointer(void)
 }
 
 
+#if defined(TEENSYDUINO)
+/***************************************************************************************
+** Function name:           flushBufferCache
+** Description:             Flushes ARM cache to sprite memory area RAM
+***************************************************************************************/
+void TFT_eSprite::flushBufferCache(void)
+{
+  arm_dcache_flush(_img8_1, _allocSz);
+}
+#endif // defined(TEENSYDUINO)
+
+
+
 /***************************************************************************************
 ** Function name:           created
 ** Description:             Returns true if sprite has been created
@@ -157,52 +170,30 @@ void* TFT_eSprite::callocSprite(int16_t w, int16_t h, uint8_t frames)
   // this means push/writeColor functions do not need additional bounds checks and
   // hence will run faster in normal circumstances.
   uint8_t* ptr8 = nullptr;
+  size_t size = sizeof(uint8_t);
+
 
   if (frames > 2) frames = 2; // Currently restricted to 2 frame buffers
   if (frames < 1) frames = 1;
 
+  // Compute size needed - platform-independent
   if (_bpp == 16)
   {
-#if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
-    if ( psramFound() && _psram_enable && !_tft->DMA_Enabled)
-    {
-      ptr8 = ( uint8_t*) ps_calloc(frames * w * h + frames, sizeof(uint16_t));
+    _allocSz = frames * w * h + frames;
+    size = sizeof(uint16_t);
       //Serial.println("PSRAM");
-    }
-    else
-#elif defined(ARDUINO_TEENSY41)  
-    if (_psram_enable && _preferPSRAM)
-    {
-      ptr8 = ( uint8_t*) extmem_calloc(frames * w * h + frames, sizeof(uint16_t));
-    }
-    else
-#endif
-    {
-      ptr8 = ( uint8_t*) calloc(frames * w * h + frames, sizeof(uint16_t));
-      //Serial.println("Normal RAM");
-    }
   }
-
   else if (_bpp == 8)
   {
-#if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
-    if ( psramFound() && _psram_enable ) ptr8 = ( uint8_t*) ps_calloc(frames * w * h + frames, sizeof(uint8_t));
-    else
-#endif
-    ptr8 = ( uint8_t*) calloc(frames * w * h + frames, sizeof(uint8_t));
+    _allocSz = frames * w * h + frames;
   }
-
   else if (_bpp == 4)
   {
     w = (w+1) & 0xFFFE; // width needs to be multiple of 2, with an extra "off screen" pixel
     _iwidth = w;
-#if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
-    if ( psramFound() && _psram_enable ) ptr8 = ( uint8_t*) ps_calloc(((frames * w * h) >> 1) + frames, sizeof(uint8_t));
-    else
-#endif
-    ptr8 = ( uint8_t*) calloc(((frames * w * h) >> 1) + frames, sizeof(uint8_t));
+    
+    _allocSz = ((frames * w * h) >> 1) + frames;
   }
-
   else // Must be 1 bpp
   {
     //_dwidth   Display width+height in pixels always in rotation 0 orientation
@@ -213,12 +204,29 @@ void* TFT_eSprite::callocSprite(int16_t w, int16_t h, uint8_t frames)
     _iwidth = w;         // _iwidth is rounded up to be multiple of 8, so might not be = _dwidth
     _bitwidth = w;       // _bitwidth will not be rotated whereas _iwidth may be
 
-#if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
-    if ( psramFound() && _psram_enable ) ptr8 = ( uint8_t*) ps_calloc(frames * (w>>3) * h + frames, sizeof(uint8_t));
-    else
-#endif
-    ptr8 = ( uint8_t*) calloc(frames * (w>>3) * h + frames, sizeof(uint8_t));
+    _allocSz = frames * (w>>3) * h + frames;
   }
+
+  // Now allocate - depends on the processor
+#if defined (ESP32) && defined (CONFIG_SPIRAM_SUPPORT)
+  if ( psramFound() && _psram_enable && !_tft->DMA_Enabled)
+  {
+    ptr8 = ( uint8_t*) ps_calloc(_allocSz, size);
+    //Serial.println("PSRAM");
+  }
+  else
+#elif defined(ARDUINO_TEENSY41)  
+  if (_psram_enable && _preferPSRAM)
+  {
+    ptr8 = ( uint8_t*) extmem_calloc(_allocSz, size);
+  }
+  else
+#endif
+  {
+    ptr8 = ( uint8_t*) calloc(_allocSz, size);
+    //Serial.println("Normal RAM");
+  }
+  _allocSz *= size;
 
   return ptr8;
 }

@@ -8,6 +8,13 @@
 #ifndef _TFT_eSPI_TEENSYH_
 #define _TFT_eSPI_TEENSYH_
 
+// We would
+// #include <core_cm7.h>
+// but it doesn't work, so
+#define SCB_ICSR_VECTACTIVE_Pos             0U                                            /*!< SCB ICSR: VECTACTIVE Position */
+#define SCB_ICSR_VECTACTIVE_Msk            (0x1FFUL /*<< SCB_ICSR_VECTACTIVE_Pos*/)       /*!< SCB ICSR: VECTACTIVE Mask */
+
+
 // Processor ID reported by getSetup()
 #if defined(ARDUINO_TEENSY40)
 #define PROCESSOR_ID 0x40
@@ -26,7 +33,8 @@ extern uint8_t external_psram_size;
 #define SET_BUS_READ_MODE  // Not used
 
 // Code to check if DMA is busy, used by SPI bus transaction startWrite and endWrite functions
-#define DMA_BUSY_CHECK // Not used so leave blank
+#define DMA_BUSY_CHECK dmaWait()
+#define SPI_BUSY_CHECK spi_dma.waitTransmitComplete()
 
 // To be safe, SUPPORT_TRANSACTIONS is assumed mandatory
 #if !defined (SUPPORT_TRANSACTIONS)
@@ -34,7 +42,7 @@ extern uint8_t external_psram_size;
 #endif
 
 // Initialise processor specific SPI functions, used by init()
-#define INIT_TFT_DATA_BUS
+#define INIT_TFT_DATA_BUS spi_dma.begin()
 
 // If smooth fonts are enabled the filing system may need to be loaded
 #ifdef SMOOTH_FONT
@@ -50,8 +58,8 @@ extern uint8_t external_psram_size;
   #define DC_C // No macro allocated so it generates no code
   #define DC_D // No macro allocated so it generates no code
 #else
-  #define DC_C digitalWrite(TFT_DC, LOW)
-  #define DC_D digitalWrite(TFT_DC, HIGH)
+  #define DC_C spi_dma.DCcmd()  // digitalWrite(TFT_DC, LOW)
+  #define DC_D spi_dma.DCdata() // digitalWrite(TFT_DC, HIGH)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -206,8 +214,6 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
 {
     const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
 
-    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
-
     static void SPI_DMA_ISR(void);
     static void SPI1_DMA_ISR(void);
     static void SPI2_DMA_ISR(void);
@@ -230,6 +236,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     DMASetting chain; // settings to chain to for last few pixels
   public:
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
+    void begin();
 
     SPIClass&   getSPI(void) { return *pSPI; }      
     DMAChannel& getDMA(void) { return *pDMA; }
@@ -238,11 +245,14 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     void maybeUpdateTCR(uint32_t requested_tcr_state);
     void prepSPIforDMA(void);
     bool SPItransmitComplete(void);
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
     void fixupSPIafterDMA(void);
     void prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
     void startDMAtransfer(void);
     void finishDMAtransfer(void);
     bool cleanupNeeded(void) { return cleanupIsNeeded; }
+    void DCcmd(void);
+    void DCdata(void);
     
     void initDMA(void);
     void deInitDMA(void) { delete pDMA; pDMA = nullptr; }

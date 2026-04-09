@@ -567,7 +567,7 @@ void TFT_eSPI::initBus(void) {
   }
 #endif
 
-#ifdef TFT_DC
+#if defined(TFT_DC) && !defined(TFT_DC_MANAGED)
   if (TFT_DC >= 0) {
     pinMode(TFT_DC, OUTPUT);
     digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
@@ -681,7 +681,7 @@ void TFT_eSPI::init(uint8_t tc)
 
 
   // Set to output once again in case MISO is used for DC
-#if defined (TFT_DC) && !defined(RP2040_PIO_INTERFACE)
+#if defined (TFT_DC) && !defined(RP2040_PIO_INTERFACE) && !defined(TFT_DC_MANAGED)
   if (TFT_DC >= 0) {
     pinMode(TFT_DC, OUTPUT);
     digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
@@ -6091,7 +6091,7 @@ void TFT_eSPI::getSetup(setup_t &tft_settings)
   tft_settings.pin_tft_cs   = -1;
 #endif
 
-#if defined (TFT_DC)
+#if defined(TFT_DC) && !defined(TFT_DC_MANAGED)
   tft_settings.pin_tft_dc  = TFT_DC;
 #else
   tft_settings.pin_tft_dc  = -1;

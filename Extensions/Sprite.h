@@ -22,7 +22,12 @@ class TFT_eSprite : public TFT_eSPI {
            //  - 1 byte per pixel for 8-bit colour (332 RGB format)
            //  - 2 bytes per pixel for 16-bit color depth (565 RGB format)
   void*    createSprite(int16_t width, int16_t height, uint8_t frames = 1);
-  void     createInPSRAM(bool b) { _preferPSRAM = b; }
+
+#if defined(TEENSYDUINO)
+  void     createInPSRAM(bool b) { _preferPSRAM = b; } // say we'd prefer sprite allocation in PSRAM
+  void     flushBufferCache(void);
+#endif // defined(TEENSYDUINO)
+  
 
            // Returns a pointer to the sprite or nullptr if not created, user must cast to pointer type
   void*    getPointer(void);
@@ -173,6 +178,7 @@ class TFT_eSprite : public TFT_eSPI {
   uint8_t  *_img4;   // pointer to  4-bit sprite (uses color map)
   uint8_t  *_img8_1; // pointer to frame 1
   uint8_t  *_img8_2; // pointer to frame 2
+  size_t   _allocSz; // amount of memory allocated
 
   uint16_t *_colorMap; // color map pointer: 16 entries, used with 4-bit color map.
 

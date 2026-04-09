@@ -1,10 +1,12 @@
         ////////////////////////////////////////////////////
-        //       TFT_eSPI generic driver functions        //
+        //      TFT_eSPI Teensy 4.x driver functions      //
         ////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////////////
+#define DIRECT_WRITE_LOW(base, mask)    (*((base)+34) = (mask))
+#define DIRECT_WRITE_HIGH(base, mask)   (*((base)+33) = (mask))
 
 // SPI port selection dealt with in construcctor
 
@@ -264,6 +266,10 @@ TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint
         pSPI(&spi), pDMA(nullptr), 
         hardware{(IMXRT_LPSPI_t*) phw},
         SPIattr{attr}
+        {}
+
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::begin(void)        
 {
   int _rs = TFT_DC;
 
@@ -274,30 +280,37 @@ TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint
 	 	dc_cs_index--;	// convert to 0 based
 		_tcr_dc_assert = LPSPI_TCR_PCS(dc_cs_index);
     _tcr_dc_not_assert = LPSPI_TCR_PCS(3);
-		// Serial.printf("dc_cs_index: %02X\n", dc_cs_index);
 	} else {
-		//Serial.println("ST7735_t3: Error not DC is not valid hardware CS pin");
 		_dcport = portOutputRegister(_rs);
 		_dcpinmask = digitalPinToBitMask(_rs);
 		pinMode(_rs, OUTPUT);	
-		DC_D; // DIRECT_WRITE_HIGH(_dcport, _dcpinmask);
+		DIRECT_WRITE_HIGH(_dcport, _dcpinmask);
 		_tcr_dc_assert = LPSPI_TCR_PCS(0);
     _tcr_dc_not_assert = LPSPI_TCR_PCS(1);
 	}
+
+  // get pins in correct initial state
+  pSPI->begin();
+  pSPI->beginTransaction(SPISettings(SPI_FREQUENCY, MSBFIRST, TFT_SPI_MODE));
+  pSPI->endTransaction();
+
+  // record starting TCR settings
+  _spi_tcr_current = hardware->TCR;
 }
 
+
+// Return `true` if Tx FIFO is empty and hardware is not busy
 bool TFT_eSPI_Teensy4_SPI_with_DMA::SPItransmitComplete(void) 
 {
-  // wait until hardware is not busy
+  // see if hardware is not busy
   return  (0 == (hardware->FSR & 0x1f)) // FIFO empty
-       // && (0 == (hardware->SR  & LPSPI_SR_MBF)); // busy flag clear
-       ; //&& (0 != (hardware->SR  & LPSPI_SR_TCF));
+       && (0 == (hardware->SR  & LPSPI_SR_MBF)); // busy flag clear
 }
 
-#ifndef TCR_MASK
-#define TCR_MASK  (LPSPI_TCR_PCS(3) | LPSPI_TCR_FRAMESZ(31) | LPSPI_TCR_BYSW | LPSPI_TCR_CONT | LPSPI_TCR_RXMSK )
-#endif  
 
+#ifndef TCR_MASK
+#define TCR_MASK  (LPSPI_TCR_PCS(3) | LPSPI_TCR_FRAMESZ(31) | LPSPI_TCR_CONT | LPSPI_TCR_RXMSK )
+#endif  
 // update TCR, but only if requested state is different
 void TFT_eSPI_Teensy4_SPI_with_DMA::maybeUpdateTCR(uint32_t requested_tcr_state) 
 {
@@ -306,22 +319,40 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::maybeUpdateTCR(uint32_t requested_tcr_state)
     bool dc_state_change = (_spi_tcr_current & LPSPI_TCR_PCS(3)) != (requested_tcr_state & LPSPI_TCR_PCS(3));
     _spi_tcr_current = (_spi_tcr_current & ~TCR_MASK) | requested_tcr_state;
 
-    // only output when Transfer queue is empty.
     waitTransmitComplete();
     if (!dc_state_change || !_dcpinmask) 
     {
+      while ((hardware->FSR & 0x1F) == 0x1F) // wait while no room in FIFO
+        ;
       hardware->TCR = _spi_tcr_current;  // update the TCR
-    } else {
+    } 
+    else 
+    {
+      waitTransmitComplete();   // CS change: can only output when Transfer queue is empty.
       if (0 != (requested_tcr_state & LPSPI_TCR_PCS(3))) 
-        DC_D; // DIRECT_WRITE_HIGH(_dcport, _dcpinmask);
+        DIRECT_WRITE_HIGH(_dcport, _dcpinmask);
       else 
-        DC_C; // DIRECT_WRITE_LOW(_dcport, _dcpinmask);
+        DIRECT_WRITE_LOW(_dcport, _dcpinmask);
       hardware->TCR = _spi_tcr_current & ~(LPSPI_TCR_PCS(3) | LPSPI_TCR_CONT); // go ahead and update TCR anyway?  
     }
 //    Serial.printf("SPI TCR is %08X\n", hardware->TCR);
   }
 }
 
+void TFT_eSPI_Teensy4_SPI_with_DMA::DCcmd(void)
+{ 
+  maybeUpdateTCR((_spi_tcr_current & ~LPSPI_TCR_PCS(3)) | _tcr_dc_assert); 
+}
+
+void TFT_eSPI_Teensy4_SPI_with_DMA::DCdata(void)
+{ 
+  maybeUpdateTCR((_spi_tcr_current & ~LPSPI_TCR_PCS(3)) | _tcr_dc_not_assert); 
+}
+
+/*
+ * Initialise a DMA channel
+ * Allocates the channel and attaches its interrupt
+ */
 void TFT_eSPI_Teensy4_SPI_with_DMA::initDMA(void) 
 { 
   if (nullptr == pDMA)
@@ -367,6 +398,8 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
   maybeUpdateTCR(_tcr_dc_assert |
                   LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
   hardware->TDR = TFT_NOP; // transmit NOP command
+  maybeUpdateTCR(_tcr_dc_not_assert |
+                  LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
 
   cleanupIsNeeded = false;
 }
@@ -384,15 +417,26 @@ void dumpDMA_TCD(DMABaseClass *dmabc)
 }
 
 
+/*
+ * Generic DMA completion ISR method.
+ * Applies to any of the N SPI+DMA channels available; only
+ * one TFT display can be using a given channel at a time.
+ */
 void TFT_eSPI_Teensy4_SPI_with_DMA::DMA_ISR(void)
 { 
   pDMA->clearInterrupt();
-  if (nullptr != currentDMAtft)
-    currentDMAtft->callCompletionISR();
+  if (nullptr != currentDMAtft) // defensive, but ought to be valid!
+  {
+    TFT_eSPI* tft = currentDMAtft; // keep a copy because...
+    tft->dmaWait();                // ...this zaps currentDMAtft!
+    tft->callCompletionISR();
+  }
   asm volatile ("dsb":::"memory"); // ensure interrupt is cleared
 }
 
 
+// Separate ISRs, one per channel.
+// Call the generic ISR method for the channel in use.
 void TFT_eSPI_Teensy4_SPI_with_DMA::SPI_DMA_ISR(void) 
 {
   TFT_eSPI_Teensy4_SPD_Factory::getInstance(SPI).DMA_ISR();
@@ -428,18 +472,18 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels,
   pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts for now
   pDMA->disableOnCompletion(); // disable DMA when done
 
-  dumpDMA_TCD(pDMA);
-  arm_dcache_flush(image, pixels * sizeof *image);
+  arm_dcache_flush(image, pixels * sizeof *image); // this can take some time!
 
-  // More code needed here for odd sizes!
-  pixels = pixels - mainTransfer * LOOP_MINOR_PIXELS; // remaining pixels
+  // Fix up the remaining pixels
+  mainTransfer *= LOOP_MINOR_PIXELS; // pixels transferred by first TCD
+  pixels = pixels - mainTransfer; // how remaining pixels we have
   if (pixels > 0) // if some left, will be 1 - LOOP_MINOR_PIXELS-1
   {
     chain = *pDMA; // copy main transfer settings
-    chain.sourceBuffer(image + mainTransfer,pixels * sizeof *image); // last few pixels
+    chain.sourceBuffer(image + mainTransfer, pixels * sizeof *image); // last few pixels
     pDMA->replaceSettingsOnCompletion(chain);
-    pDMA->TCD->CSR &= ~DMA_TCD_CSR_DREQ; // don't disable on completion of first transfer
-    chain.interruptAtCompletion(); // interrupt after odd size mop-up transfer
+    pDMA->TCD->CSR &= ~DMA_TCD_CSR_DREQ;  // don't disable on completion of first transfer
+    chain.interruptAtCompletion();        // interrupt after odd size mop-up transfer
   }
   else
     pDMA->interruptAtCompletion(); // just main transfer - interrupt after that
@@ -448,6 +492,9 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels,
 }
 
 
+/*
+ * Start the DMA channel transferring - all setup has previously been done
+ */
 void TFT_eSPI_Teensy4_SPI_with_DMA::startDMAtransfer(void)
 {
   DMAidle = false;
@@ -455,7 +502,9 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::startDMAtransfer(void)
   pDMA->enable(); // start the transfer
 }
 
-
+/*
+ * Set DMA channel back to inactive state after transfer is complete
+ */
 void TFT_eSPI_Teensy4_SPI_with_DMA::finishDMAtransfer(void)
 {
   pDMA->clearComplete();
@@ -464,6 +513,11 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::finishDMAtransfer(void)
   currentDMAtft = nullptr;
 }
 
+
+/*
+ * Find out if DMA transfer is still in progress.
+ * We also say it's busy if the SPI FIFO still has pending data.
+ */
 bool TFT_eSPI_Teensy4_SPI_with_DMA::dmaBusy(void) 
 { 
   return (!DMAidle && !pDMA->complete())
@@ -493,33 +547,28 @@ bool TFT_eSPI::dmaBusy(void)
 // after dmaBusy() starts returning false, won't take long
 void TFT_eSPI::dmaWait(void) 
 { 
+  bool inISR = (SCB_ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
   while (dmaBusy())
-    yield();
+    if (!inISR)
+      yield();
   if (spi_dma.cleanupNeeded())
   {
     spi_dma.finishDMAtransfer();
     spi_dma.fixupSPIafterDMA();
-    end_tft_write();
+    //end_tft_write();
   }
 }
 
 void TFT_eSPI::pushPixelsDMA(uint16_t* image, // pointer to image data
                              uint32_t len)    // length of image data in pixels
 {
-Serial.println("\ndmaWait");
   dmaWait(); // should take no time as long as previous DMA is finished
 
-Serial.println("prepDMA");
   spi_dma.prepDMAtransfer(image, len, *this);  // get DMA channel ready
 
-
-Serial.println("begin SPI transaction");
-  begin_tft_write(); // this modifies the SPI settings!
-Serial.println("prepSPI");
-  spi_dma.prepSPIforDMA();              // get SPI hardware ready
-Serial.printf("SPI TCR is %08X\n", spi_dma.getHardware().TCR);
-Serial.println("Go!");
-  spi_dma.startDMAtransfer();
+  //begin_tft_write();          // this modifies the SPI settings!
+  spi_dma.prepSPIforDMA();    // get SPI hardware ready
+  spi_dma.startDMAtransfer(); 
 }
 
 void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, 
@@ -534,7 +583,6 @@ void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h,
     buffer = image;
   else
     memcpy(buffer, image, pixels * sizeof *buffer);
-
   setAddrWindow(x,y,w,h);
   pushPixelsDMA((uint16_t*) buffer,pixels);
 }

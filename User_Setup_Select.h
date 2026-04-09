@@ -169,8 +169,8 @@
 
 //#include <User_Setups/SetupX_Template.h>     // Template file for a setup
 
-#include <User_Setups/Setup400_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
-//#include <User_Setups/Setup401_Teensy_ST7796.h>  // Setup file for Teensy boards with ST7789 TFT
+//#include <User_Setups/Setup400_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
+#include <User_Setups/Setup401_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
 
 //#include <User_Setups/Dustin_ILI9488.h>          // Setup file for Dustin Watts PCB with ILI9488
 //#include <User_Setups/Dustin_ST7796.h>           // Setup file for Dustin Watts PCB with ST7796

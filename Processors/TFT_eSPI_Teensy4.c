@@ -589,7 +589,7 @@ void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h,
     buffer = image;
   else
     memcpy(buffer, image, pixels * sizeof *buffer);
-  spi_dma.echoTCR = true;
+  //spi_dma.echoTCR = true;
   setAddrWindow(x,y,w,h);
   spi_dma.echoTCR = false;
   Serial.println();

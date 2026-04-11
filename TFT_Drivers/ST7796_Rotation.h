@@ -1,3 +1,7 @@
+#if defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+#define writecommand writecommand_no_end
+#define writedata writedata_last
+#endif // defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
 
 // This is the command sequence that rotates the ST7796 driver coordinate frame
 
@@ -76,3 +80,9 @@
       break;
 
   }
+
+#if defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+#undef writecommand 
+#undef writedata 
+#endif // defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+

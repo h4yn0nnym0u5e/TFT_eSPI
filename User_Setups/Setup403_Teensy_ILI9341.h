@@ -9,8 +9,8 @@
 //   Note that some sketches are designed for a particular TFT pixel width/height
 
 // User defined information reported by "Read_User_Setup" test & diagnostics example
-#define USER_SETUP_INFO "Setup401_Teensy_ST7789"
-#define USER_SETUP_ID   401
+#define USER_SETUP_INFO "Setup403_Teensy_ILI9341"
+#define USER_SETUP_ID   403
 
 // Define to disable all #warnings in library (can be put in User_Setup_Select.h)
 //#define DISABLE_ALL_LIBRARY_WARNINGS
@@ -26,7 +26,7 @@
 
 // Only define one driver, the other ones must be commented out
 //#define ILI9341_DRIVER       // Generic driver for common displays
-//#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
+#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
 //#define ST7735_DRIVER      // Define additional parameters below for this display
 //#define ILI9163_DRIVER     // Define additional parameters below for this display
 //#define S6D02A1_DRIVER
@@ -35,7 +35,7 @@
 //#define ILI9481_DRIVER
 //#define ILI9486_DRIVER
 //#define ILI9488_DRIVER     // WARNING: Do not connect ILI9488 display SDO to MISO if other devices share the SPI bus (TFT SDO does NOT tristate when CS is high)
-#define ST7789_DRIVER      // Full configuration option, define additional parameters below for this display
+//#define ST7789_DRIVER      // Full configuration option, define additional parameters below for this display
 //#define ST7789_2_DRIVER    // Minimal configuration option, define additional parameters below for this display
 //#define R61581_DRIVER
 //#define RM68140_DRIVER
@@ -59,43 +59,6 @@
 //  #define TFT_RGB_ORDER TFT_RGB  // Colour order Red-Green-Blue
 //  #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
 
-
-// For ST7789, ST7735, ILI9163 and GC9A01 ONLY, define the 
-// pixel width and height in portrait orientation
-//
-// Values specified in the constructor will override these
-//
-// #define TFT_WIDTH  76 // ST7789 76 x 284
-// #define TFT_WIDTH  80
-// #define TFT_WIDTH  128
-// #define TFT_WIDTH  172 // ST7789 172 x 320
-// #define TFT_WIDTH  170 // ST7789 170 x 320
-#define TFT_WIDTH  240 // ST7789 240 x 240 and 240 x 320
-
-// #define TFT_HEIGHT 160
-// #define TFT_HEIGHT 128
-//#define TFT_HEIGHT 240 // ST7789 240 x 240
-// #define TFT_HEIGHT 284 // ST7789 76 x 284
-// #define TFT_HEIGHT 320 // ST7789 240 x 320
-#define TFT_HEIGHT 240 // GC9A01 240 x 240
-
-// For ST7735 ONLY, define the type of display, originally this was based on the
-// colour of the tab on the screen protector film but this is not always true, so try
-// out the different options below if the screen does not display graphics correctly,
-// e.g. colours wrong, mirror images, or stray pixels at the edges.
-// Comment out ALL BUT ONE of these options for a ST7735 display driver, save this
-// this User_Setup file, then rebuild and upload the sketch to the board again:
-
-// #define ST7735_INITB
-// #define ST7735_GREENTAB
-// #define ST7735_GREENTAB2
-// #define ST7735_GREENTAB3
-// #define ST7735_GREENTAB128    // For 128 x 128 display
-// #define ST7735_GREENTAB160x80 // For 160 x 80 display (BGR, inverted, 26 offset)
-// #define ST7735_ROBOTLCD       // For some RobotLCD Arduino shields (128x160, BGR, https://docs.arduino.cc/retired/getting-started-guides/TFT)
-// #define ST7735_REDTAB
-// #define ST7735_BLACKTAB
-// #define ST7735_REDTAB160x80   // For 160 x 80 display with 24 pixel offset
 
 // If colours are inverted (white shows as black) then uncomment one of the next
 // 2 lines try both options, one of the options should correct the inversion.
@@ -139,8 +102,6 @@
 
 #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
 
-//#define TFT_WR PIN_D2       // Write strobe for modified Raspberry Pi TFT only
-
 
 // ##################################################################################
 //
@@ -176,23 +137,18 @@
 // #define SPI_FREQUENCY   1'000'000
 // #define SPI_FREQUENCY   5'000'000
 // #define SPI_FREQUENCY  10'000'000
-// #define SPI_FREQUENCY  16'000'000
-// #define SPI_FREQUENCY  20'000'000
+ #define SPI_FREQUENCY  16'000'000
+//#define SPI_FREQUENCY  20'000'000
 // #define SPI_FREQUENCY  27'000'000
-#define SPI_FREQUENCY  40'000'000
+// #define SPI_FREQUENCY  40'000'000
 // #define SPI_FREQUENCY  55'000'000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
 // #define SPI_FREQUENCY  80'000'000
 
 // Optional reduced SPI frequency for reading TFT
-#define SPI_READ_FREQUENCY  20000000
+#define SPI_READ_FREQUENCY  20'000'000
 
 // The XPT2046 requires a lower SPI clock rate of 2.5MHz so we define that here:
-#define SPI_TOUCH_FREQUENCY  2500000
-
-// The ESP32 has 2 free SPI ports i.e. VSPI and HSPI, the VSPI is the default.
-// If the VSPI port is in use and pins are not accessible (e.g. TTGO T-Beam)
-// then uncomment the following line:
-//#define USE_HSPI_PORT
+#define SPI_TOUCH_FREQUENCY  2'500'000
 
 // Comment out the following #define if "SPI Transactions" do not need to be
 // supported. When commented out the code size will be smaller and sketches will

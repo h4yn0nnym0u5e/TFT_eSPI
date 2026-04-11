@@ -7,6 +7,7 @@
 
 #define TFT_INIT_DELAY 0
 {
+#if !defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
 	delay(120);
 
 	writecommand(0x01); //Software reset
@@ -104,4 +105,103 @@
   begin_tft_write();
 
 	writecommand(0x29); //Display on                                          	
+#else 
+	delay(120);
+
+	writecommand(0x01); //Software reset
+	delay(120);
+
+	writecommand(0x11); //Sleep exit                                            
+	delay(120);
+
+	writecommand_no_end(0xF0); //Command Set control                                 
+	writedata_last(0xC3);    //Enable extension command 2 partI
+	
+	writecommand_no_end(0xF0); //Command Set control                                 
+	writedata_last(0x96);    //Enable extension command 2 partII
+	
+	writecommand_no_end(0x36); //Memory Data Access Control MX, MY, RGB mode                                    
+	writedata_last(0x48);    //X-Mirror, Top-Left to right-Buttom, RGB  
+	
+	writecommand_no_end(0x3A); //Interface Pixel Format                                    
+	writedata_last(0x55);    //Control interface color format set to 16
+	
+	
+	writecommand_no_end(0xB4); //Column inversion 
+	writedata_last(0x01);    //1-dot inversion
+
+	writecommand_no_end(0xB6); //Display Function Control
+	writedata_no_end(0x80);    //Bypass
+	writedata_no_end(0x02);    //Source Output Scan from S1 to S960, Gate Output scan from G1 to G480, scan cycle=2
+	writedata_last(0x3B);    //LCD Drive Line=8*(59+1)
+
+
+	writecommand_no_end(0xE8); //Display Output Ctrl Adjust
+	writedata_no_end(0x40);
+	writedata_no_end(0x8A);	
+	writedata_no_end(0x00);
+	writedata_no_end(0x00);
+	writedata_no_end(0x29);    //Source eqaulizing period time= 22.5 us
+	writedata_no_end(0x19);    //Timing for "Gate start"=25 (Tclk)
+	writedata_no_end(0xA5);    //Timing for "Gate End"=37 (Tclk), Gate driver EQ function ON
+	writedata_last(0x33);
+	
+	writecommand_no_end(0xC1); //Power control2                          
+	writedata_last(0x06);    //VAP(GVDD)=3.85+( vcom+vcom offset), VAN(GVCL)=-3.85+( vcom+vcom offset)
+	 
+	writecommand_no_end(0xC2); //Power control 3                                      
+	writedata_last(0xA7);    //Source driving current level=low, Gamma driving current level=High
+	 
+	writecommand_no_end(0xC5); //VCOM Control
+	writedata_last(0x18);    //VCOM=0.9
+
+	delay(120);
+	
+	//ST7796 Gamma Sequence
+	writecommand_no_end(0xE0); //Gamma"+"                                             
+	writedata_no_end(0xF0);
+	writedata_no_end(0x09); 
+	writedata_no_end(0x0b);
+	writedata_no_end(0x06); 
+	writedata_no_end(0x04);
+	writedata_no_end(0x15); 
+	writedata_no_end(0x2F);
+	writedata_no_end(0x54); 
+	writedata_no_end(0x42);
+	writedata_no_end(0x3C); 
+	writedata_no_end(0x17);
+	writedata_no_end(0x14);
+	writedata_no_end(0x18); 
+	writedata_last(0x1B); 
+	 
+	writecommand_no_end(0xE1); //Gamma"-"                                             
+	writedata_no_end(0xE0);
+	writedata_no_end(0x09); 
+	writedata_no_end(0x0B);
+	writedata_no_end(0x06); 
+	writedata_no_end(0x04);
+	writedata_no_end(0x03); 
+	writedata_no_end(0x2B);
+	writedata_no_end(0x43); 
+	writedata_no_end(0x42);
+	writedata_no_end(0x3B); 
+	writedata_no_end(0x16);
+	writedata_no_end(0x14);
+	writedata_no_end(0x17); 
+	writedata_last(0x1B);
+
+  delay(120);
+	
+	writecommand_no_end(0xF0); //Command Set control                                 
+	writedata_last(0x3C);    //Disable extension command 2 partI
+
+	writecommand_no_end(0xF0); //Command Set control                                 
+	writedata_last(0x69);    //Disable extension command 2 partII
+
+  end_tft_write();
+  delay(120);
+  begin_tft_write();
+
+	writecommand(0x29); //Display on                                          	
+#endif // defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
 }

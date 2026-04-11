@@ -583,6 +583,7 @@ void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h,
     buffer = image;
   else
     memcpy(buffer, image, pixels * sizeof *buffer);
-  setAddrWindow(x,y,w,h);
+  //setAddrWindow(x,y,w,h);
+  setWindow(x, y, x + w - 1, y + h - 1);
   pushPixelsDMA((uint16_t*) buffer,pixels);
 }

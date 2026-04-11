@@ -182,6 +182,16 @@ extern uint8_t external_psram_size;
     #define tft_Write_32D(C) \
     tft_Write_16((uint16_t) (C)); \
     tft_Write_16((uint16_t) (C))
+
+    #define writecommand_no_end(C) \
+        { begin_tft_write(); DC_C; tft_Write_8(C); DC_D; }
+
+    #define writedata_no_end(D) \
+        { tft_Write_8(D); }
+
+    #define writedata_last(D) \
+        { tft_Write_8(D); CS_L; end_tft_write(); }
+
   #endif // RPI_DISPLAY_TYPE
 #endif
 

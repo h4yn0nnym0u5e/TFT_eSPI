@@ -68,7 +68,8 @@
 
 // Some displays require /CS to be kept low during each initialisation 
 // command+data transaction. Flag this here - it may be ignored by some drivers
-#define TFT_INIT_ONE_TRANSACTION_PER_COMMAND
+// May also be set below by Magic Stuff
+// #define TFT_INIT_ONE_TRANSACTION_PER_COMMAND
 
 
 // ##################################################################################
@@ -90,6 +91,12 @@
 
 #define TFT_DC   10 // this IS used: pin 10 should give optimised SPI transactions...
 #define TFT_DC_MANAGED // ... if this symbol is defined - means its setting MUST NOT be changed
+
+// for ST7796 seems that DC=10, managed requires TFT_INIT_ONE_TRANSACTION_PER_COMMAND
+// Not necessarily true for other displays...
+#if defined(TFT_DC_MANAGED) && !defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+    #define TFT_INIT_ONE_TRANSACTION_PER_COMMAND
+#endif
 
 // For Teensy the SPI instance used in the constructor will determine the pins,
 // but we leave this here for information (numbers are for SPI, not SPI1 or SPI2)

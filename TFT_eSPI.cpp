@@ -677,6 +677,8 @@ void TFT_eSPI::init(uint8_t tc)
   }
 #elif defined (ARDUINO_ARCH_ESP8266) && !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_SPI)
   spi.setHwCs(1); // Use hardware SS toggling
+#elif defined(TFT_ESPI_TEENSY)
+  CS_H;
 #endif
 
 
@@ -991,6 +993,7 @@ void TFT_eSPI::spiwrite(uint8_t c)
 #ifndef RM68120_DRIVER
 void TFT_eSPI::writecommand(uint8_t c)
 {
+//  Serial.printf("%d: C %02X\n", millis(), c);
   begin_tft_write();
 
   DC_C;
@@ -1054,6 +1057,7 @@ void TFT_eSPI::writeRegister16(uint16_t c, uint16_t d)
 ***************************************************************************************/
 void TFT_eSPI::writedata(uint8_t d)
 {
+//  Serial.printf("%d: D %02X\n", millis(), d);
   begin_tft_write();
 
   DC_D;        // Play safe, but should already be in data mode

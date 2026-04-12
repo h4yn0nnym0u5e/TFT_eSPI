@@ -1,9 +1,8 @@
         ////////////////////////////////////////////////////
-        //       TFT_eSPI generic driver functions        //
+        //     TFT_eSPI Teensy 4.x driver functions       //
         ////////////////////////////////////////////////////
 
-// This is a generic driver for Arduino boards, it supports SPI interface displays
-// 8-bit parallel interface to TFT is not supported for generic processors
+// This is a driver for Teensy 4.x boards, it supports SPI interface displays
 
 #ifndef _TFT_eSPI_TEENSYH_
 #define _TFT_eSPI_TEENSYH_
@@ -184,13 +183,13 @@ extern uint8_t external_psram_size;
     tft_Write_16((uint16_t) (C))
 
     #define writecommand_no_end(C) \
-        { begin_tft_write(); DC_C; tft_Write_8(C); DC_D; }
+        { /* Serial.printf("%d: C %02X: ", millis(), C); */ begin_tft_write(); DC_C; tft_Write_8(C); DC_D; }
 
     #define writedata_no_end(D) \
-        { tft_Write_8(D); }
+        { /* Serial.printf("%02X ", D); */ tft_Write_8(D); }
 
     #define writedata_last(D) \
-        { tft_Write_8(D); CS_L; end_tft_write(); }
+        { /* Serial.printf("%02X\n", D); */ tft_Write_8(D); CS_L; end_tft_write(); }
 
   #endif // RPI_DISPLAY_TYPE
 #endif

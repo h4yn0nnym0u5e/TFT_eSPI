@@ -171,8 +171,8 @@
 
 //#include <User_Setups/Setup400_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
 //#include <User_Setups/Setup401_Teensy_ST7789.h>  // Setup file for Teensy boards with ST7789 TFT
-#include <User_Setups/Setup402_Teensy_ST7796.h>  // Setup file for Teensy boards with ST7796 TFT
-//#include <User_Setups/Setup403_Teensy_ILI9341.h>  // Setup file for Teensy boards with ILI9341 TFT
+//#include <User_Setups/Setup402_Teensy_ST7796.h>  // Setup file for Teensy boards with ST7796 TFT
+#include <User_Setups/Setup403_Teensy_ILI9341.h>  // Setup file for Teensy boards with ILI9341 TFT
 
 //#include <User_Setups/Dustin_ILI9488.h>          // Setup file for Dustin Watts PCB with ILI9488
 //#include <User_Setups/Dustin_ST7796.h>           // Setup file for Dustin Watts PCB with ST7796

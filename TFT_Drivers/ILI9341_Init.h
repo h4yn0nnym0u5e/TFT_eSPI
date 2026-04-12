@@ -4,83 +4,92 @@
 // This setup information uses simple 8-bit SPI writecommand() and writedata() functions
 //
 // See ST7735_Setup.h file for an alternative format
+#if defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+#define writecommand_no_endx writecommand_no_end
+#define writedata writedata_no_end
+#define writedata_lastx writedata_last
+#else
+#define writecommand_no_endx writecommand
+#define writedata_lastx writedata
+#endif // defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+
 
 #if defined (ILI9341_DRIVER) || defined (ILI9342_DRIVER)
 {
-  writecommand(0xEF);
+  writecommand_no_endx(0xEF);
   writedata(0x03);
   writedata(0x80);
-  writedata(0x02);
+  writedata_lastx(0x02);
 
-  writecommand(0xCF);
+  writecommand_no_endx(0xCF);
   writedata(0x00);
   writedata(0XC1);
-  writedata(0X30);
+  writedata_lastx(0X30);
 
-  writecommand(0xED);
+  writecommand_no_endx(0xED);
   writedata(0x64);
   writedata(0x03);
   writedata(0X12);
-  writedata(0X81);
+  writedata_lastx(0X81);
 
-  writecommand(0xE8);
+  writecommand_no_endx(0xE8);
   writedata(0x85);
   writedata(0x00);
-  writedata(0x78);
+  writedata_lastx(0x78);
 
-  writecommand(0xCB);
+  writecommand_no_endx(0xCB);
   writedata(0x39);
   writedata(0x2C);
   writedata(0x00);
   writedata(0x34);
-  writedata(0x02);
+  writedata_lastx(0x02);
 
-  writecommand(0xF7);
-  writedata(0x20);
+  writecommand_no_endx(0xF7);
+  writedata_lastx(0x20);
 
-  writecommand(0xEA);
+  writecommand_no_endx(0xEA);
   writedata(0x00);
-  writedata(0x00);
+  writedata_lastx(0x00);
 
-  writecommand(ILI9341_PWCTR1);    //Power control
-  writedata(0x23);   //VRH[5:0]
+  writecommand_no_endx(ILI9341_PWCTR1);    //Power control
+  writedata_lastx(0x23);   //VRH[5:0]
 
-  writecommand(ILI9341_PWCTR2);    //Power control
-  writedata(0x10);   //SAP[2:0];BT[3:0]
+  writecommand_no_endx(ILI9341_PWCTR2);    //Power control
+  writedata_lastx(0x10);   //SAP[2:0];BT[3:0]
 
-  writecommand(ILI9341_VMCTR1);    //VCM control
+  writecommand_no_endx(ILI9341_VMCTR1);    //VCM control
   writedata(0x3e);
-  writedata(0x28);
+  writedata_lastx(0x28);
 
-  writecommand(ILI9341_VMCTR2);    //VCM control2
-  writedata(0x86);  //--
+  writecommand_no_endx(ILI9341_VMCTR2);    //VCM control2
+  writedata_lastx(0x86);  //--
 
-  writecommand(ILI9341_MADCTL);    // Memory Access Control
+  writecommand_no_endx(ILI9341_MADCTL);    // Memory Access Control
 #ifdef M5STACK
-  writedata(TFT_MAD_MY | TFT_MAD_MV | TFT_MAD_COLOR_ORDER); // Rotation 0 (portrait mode)
+  writedata_lastx(TFT_MAD_MY | TFT_MAD_MV | TFT_MAD_COLOR_ORDER); // Rotation 0 (portrait mode)
 #else
-  writedata(TFT_MAD_MX | TFT_MAD_COLOR_ORDER); // Rotation 0 (portrait mode)
+  writedata_lastx(TFT_MAD_MX | TFT_MAD_COLOR_ORDER); // Rotation 0 (portrait mode)
 #endif
 
-  writecommand(ILI9341_PIXFMT);
-  writedata(0x55);
+  writecommand_no_endx(ILI9341_PIXFMT);
+  writedata_lastx(0x55);
 
-  writecommand(ILI9341_FRMCTR1);
+  writecommand_no_endx(ILI9341_FRMCTR1);
   writedata(0x00);
-  writedata(0x13); // 0x18 79Hz, 0x1B default 70Hz, 0x13 100Hz
+  writedata_lastx(0x13); // 0x18 79Hz, 0x1B default 70Hz, 0x13 100Hz
 
-  writecommand(ILI9341_DFUNCTR);    // Display Function Control
+  writecommand_no_endx(ILI9341_DFUNCTR);    // Display Function Control
   writedata(0x08);
   writedata(0x82);
-  writedata(0x27);
+  writedata_lastx(0x27);
 
-  writecommand(0xF2);    // 3Gamma Function Disable
-  writedata(0x00);
+  writecommand_no_endx(0xF2);    // 3Gamma Function Disable
+  writedata_lastx(0x00);
 
-  writecommand(ILI9341_GAMMASET);    //Gamma curve selected
-  writedata(0x01);
+  writecommand_no_endx(ILI9341_GAMMASET);    //Gamma curve selected
+  writedata_lastx(0x01);
 
-  writecommand(ILI9341_GMCTRP1);    //Set Gamma
+  writecommand_no_endx(ILI9341_GMCTRP1);    //Set Gamma
   writedata(0x0F);
   writedata(0x31);
   writedata(0x2B);
@@ -95,9 +104,9 @@
   writedata(0x03);
   writedata(0x0E);
   writedata(0x09);
-  writedata(0x00);
+  writedata_lastx(0x00);
 
-  writecommand(ILI9341_GMCTRN1);    //Set Gamma
+  writecommand_no_endx(ILI9341_GMCTRN1);    //Set Gamma
   writedata(0x00);
   writedata(0x0E);
   writedata(0x14);
@@ -112,7 +121,7 @@
   writedata(0x0C);
   writedata(0x31);
   writedata(0x36);
-  writedata(0x0F);
+  writedata_lastx(0x0F);
 
   writecommand(ILI9341_SLPOUT);    //Exit Sleep
  
@@ -127,71 +136,71 @@
 #elif defined (ILI9341_2_DRIVER) // Alternative init sequence, see https://github.com/Bodmer/TFT_eSPI/issues/1172
 
 {
-writecommand(0xCF);
+writecommand_no_endx(0xCF);
 writedata(0x00);
 writedata(0XC1);
-writedata(0X30);
+writedata_lastx(0X30);
 
-writecommand(0xED);
+writecommand_no_endx(0xED);
 writedata(0x64);
 writedata(0x03);
 writedata(0X12);
-writedata(0X81);
+writedata_lastx(0X81);
 
-writecommand(0xE8);
+writecommand_no_endx(0xE8);
 writedata(0x85);
 writedata(0x00);
-writedata(0x78);
+writedata_lastx(0x78);
 
-writecommand(0xCB);
+writecommand_no_endx(0xCB);
 writedata(0x39);
 writedata(0x2C);
 writedata(0x00);
 writedata(0x34);
-writedata(0x02);
+writedata_lastx(0x02);
 
-writecommand(0xF7);
-writedata(0x20);
+writecommand_no_endx(0xF7);
+writedata_lastx(0x20);
 
-writecommand(0xEA);
+writecommand_no_endx(0xEA);
 writedata(0x00);
-writedata(0x00);
+writedata_lastx(0x00);
 
-writecommand(ILI9341_PWCTR1); //Power control
-writedata(0x10); //VRH[5:0]
+writecommand_no_endx(ILI9341_PWCTR1); //Power control
+writedata_lastx(0x10); //VRH[5:0]
 
-writecommand(ILI9341_PWCTR2); //Power control
-writedata(0x00); //SAP[2:0];BT[3:0]
+writecommand_no_endx(ILI9341_PWCTR2); //Power control
+writedata_lastx(0x00); //SAP[2:0];BT[3:0]
 
-writecommand(ILI9341_VMCTR1); //VCM control
+writecommand_no_endx(ILI9341_VMCTR1); //VCM control
 writedata(0x30);
-writedata(0x30);
+writedata_lastx(0x30);
 
-writecommand(ILI9341_VMCTR2); //VCM control2
-writedata(0xB7); //--
+writecommand_no_endx(ILI9341_VMCTR2); //VCM control2
+writedata_lastx(0xB7); //--
 
-writecommand(ILI9341_PIXFMT);
-writedata(0x55);
+writecommand_no_endx(ILI9341_PIXFMT);
+writedata_lastx(0x55);
 
-writecommand(0x36); // Memory Access Control
-writedata(0x08); // Rotation 0 (portrait mode)
+writecommand_no_endx(0x36); // Memory Access Control
+writedata_lastx(0x08); // Rotation 0 (portrait mode)
 
-writecommand(ILI9341_FRMCTR1);
+writecommand_no_endx(ILI9341_FRMCTR1);
 writedata(0x00);
-writedata(0x1A);
+writedata_lastx(0x1A);
 
-writecommand(ILI9341_DFUNCTR); // Display Function Control
+writecommand_no_endx(ILI9341_DFUNCTR); // Display Function Control
 writedata(0x08);
 writedata(0x82);
-writedata(0x27);
+writedata_lastx(0x27);
 
-writecommand(0xF2); // 3Gamma Function Disable
-writedata(0x00);
+writecommand_no_endx(0xF2); // 3Gamma Function Disable
+writedata_lastx(0x00);
 
-writecommand(0x26); //Gamma curve selected
-writedata(0x01);
+writecommand_no_endx(0x26); //Gamma curve selected
+writedata_lastx(0x01);
 
-writecommand(0xE0); //Set Gamma
+writecommand_no_endx(0xE0); //Set Gamma
 writedata(0x0F);
 writedata(0x2A);
 writedata(0x28);
@@ -206,9 +215,9 @@ writedata(0x0F);
 writedata(0x00);
 writedata(0x00);
 writedata(0x00);
-writedata(0x00);
+writedata_lastx(0x00);
 
-writecommand(0XE1); //Set Gamma
+writecommand_no_endx(0XE1); //Set Gamma
 writedata(0x00);
 writedata(0x15);
 writedata(0x17);
@@ -223,19 +232,19 @@ writedata(0x10);
 writedata(0x0F);
 writedata(0x3F);
 writedata(0x3F);
-writedata(0x0F);
+writedata_lastx(0x0F);
 
-writecommand(0x2B);
+writecommand_no_endx(0x2B);
 writedata(0x00);
 writedata(0x00);
 writedata(0x01);
-writedata(0x3f);
+writedata_lastx(0x3f);
 
-writecommand(0x2A);
+writecommand_no_endx(0x2A);
 writedata(0x00);
 writedata(0x00);
 writedata(0x00);
-writedata(0xef);
+writedata_lastx(0xef);
 
 writecommand(ILI9341_SLPOUT); //Exit Sleep
 
@@ -246,3 +255,12 @@ begin_tft_write();
 writecommand(ILI9341_DISPON); //Display on
 }
 #endif
+
+#if defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
+#undef writecommand_no_endx
+#undef writedata
+#undef writedata_lastx
+#else
+#undef writecommand_no_endx
+#undef writedata_lastx
+#endif // defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)

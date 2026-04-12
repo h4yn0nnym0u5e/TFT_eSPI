@@ -290,12 +290,19 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::begin(void)
 	}
 
   // get pins in correct initial state
-  pSPI->begin();
+  //pSPI->begin();
   pSPI->beginTransaction(SPISettings(SPI_FREQUENCY, MSBFIRST, TFT_SPI_MODE));
   pSPI->endTransaction();
 
   // record starting TCR settings
   _spi_tcr_current = hardware->TCR;
+  DCcmd();
+  pSPI->transfer(TFT_NOP);
+  DCdata();
+  pSPI->transfer(TFT_NOP);
+  DCcmd();
+  pSPI->transfer(TFT_NOP);
+  DCdata();
 }
 
 

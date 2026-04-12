@@ -25,8 +25,8 @@
 #define TFT_ESPI_TEENSY
 
 // Only define one driver, the other ones must be commented out
-//#define ILI9341_DRIVER       // Generic driver for common displays
-#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
+#define ILI9341_DRIVER       // Generic driver for common displays
+//#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
 //#define ST7735_DRIVER      // Define additional parameters below for this display
 //#define ILI9163_DRIVER     // Define additional parameters below for this display
 //#define S6D02A1_DRIVER
@@ -66,6 +66,10 @@
 // #define TFT_INVERSION_ON
 // #define TFT_INVERSION_OFF
 
+// Some displays require /CS to be kept low during each initialisation 
+// command+data transaction. Flag this here - it may be ignored by some drivers
+#define TFT_INIT_ONE_TRANSACTION_PER_COMMAND
+
 
 // ##################################################################################
 //
@@ -84,8 +88,8 @@
 
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP8266 SETUP ######
 
-#define TFT_DC   10 // this IS used: pin 10 should give optimised SPI transactions...
-#define TFT_DC_MANAGED // ... if this symbol is defined - means its setting MUST NOT be changed
+#define TFT_DC 9 // this IS used: pin 10 should give optimised SPI transactions...
+//#define TFT_DC_MANAGED // ... if this symbol is defined - means its setting MUST NOT be changed
 
 // For Teensy the SPI instance used in the constructor will determine the pins,
 // but we leave this here for information (numbers are for SPI, not SPI1 or SPI2)
@@ -137,10 +141,10 @@
 // #define SPI_FREQUENCY   1'000'000
 // #define SPI_FREQUENCY   5'000'000
 // #define SPI_FREQUENCY  10'000'000
- #define SPI_FREQUENCY  16'000'000
+// #define SPI_FREQUENCY  16'000'000
 //#define SPI_FREQUENCY  20'000'000
 // #define SPI_FREQUENCY  27'000'000
-// #define SPI_FREQUENCY  40'000'000
+#define SPI_FREQUENCY  40'000'000
 // #define SPI_FREQUENCY  55'000'000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
 // #define SPI_FREQUENCY  80'000'000
 

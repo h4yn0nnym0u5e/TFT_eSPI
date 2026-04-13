@@ -401,13 +401,9 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
   hardware->CR =
       LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF; // actually clear both...
   hardware->SR = 0x3f00; // clear out all of the other status...
-
-  maybeUpdateTCR(_tcr_dc_assert |
-                  LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
-  hardware->TDR = TFT_NOP; // transmit NOP command
+  
   maybeUpdateTCR(_tcr_dc_not_assert |
                   LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
-
   cleanupIsNeeded = false;
 }
 

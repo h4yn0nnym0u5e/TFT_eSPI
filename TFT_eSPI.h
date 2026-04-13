@@ -427,8 +427,35 @@ typedef struct
 typedef uint16_t (*getColorCallback)(uint16_t x, uint16_t y);
 
 // Class functions and variables
-class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has access to protected members
+class TFT_eSPI : public Print 
+{ 
+  friend class TFT_eSprite; // Sprite class has access to protected members
+  enum initPhase_e {start=0,
+                    reset_h = 10, reset_l, reset_wait, 
+                    display_init = 20,
+                    display_final = 1000,
+                    done = -1};
+  void beginPhaseWait(uint32_t duration) 
+  { 
+    _phaseWaitUntil = millis() + duration;
+    end_nin_write();
+  }
 
+  bool phaseKeepWaiting(bool beginAgain = true)
+  {
+    bool result = true;
+
+    if (millis() >= _phaseWaitUntil)
+    {
+      if (beginAgain)
+        begin_nin_write();
+      result = false;
+    }
+    else
+      yield();
+
+    return result;
+  }
  //--------------------------------------- public ------------------------------------//
  public:
 
@@ -442,6 +469,9 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   // init() and begin() are equivalent, begin() included for backwards compatibility
   // Sketch defined tab colour option is for ST7735 displays only
   void     init(uint8_t tc = TAB_COLOUR), begin(uint8_t tc = TAB_COLOUR);
+
+  // Phased init; call repeatedly until finished, should NOT use delay()!
+  int      phasedInit(uint8_t tc, int phase);
 
   // These are virtual so the TFT_eSprite class can override them with sprite specific functions
   virtual void     drawPixel(int32_t x, int32_t y, uint32_t color),
@@ -970,6 +1000,7 @@ class TFT_eSPI : public Print { friend class TFT_eSprite; // Sprite class has ac
   bool     _swapBytes; // Swap the byte order for TFT pushImage()
 
   bool     _booted;    // init() or begin() has already run once
+  uint32_t _phaseWaitUntil; // waiting time target (milliseconds) during phased init
 
                        // User sketch manages these via set/getAttribute()
   bool     _cp437;        // If set, use correct CP437 charset (default is OFF)

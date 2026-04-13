@@ -622,195 +622,255 @@ void TFT_eSPI::begin(uint8_t tc)
 ***************************************************************************************/
 void TFT_eSPI::init(uint8_t tc)
 {
-  if (_booted)
+  int phase = 0;
+  while (phase != done)
   {
-    initBus();
+    phase = phasedInit(tc, phase);
+  }
+}
 
-#if !defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
-  // Legacy bitmasks for GPIO
-  #if defined (TFT_CS) && (TFT_CS >= 0)
-    cspinmask = (uint32_t) digitalPinToBitMask(TFT_CS);
-  #endif
+/***************************************************************************************
+** Function name:           init (tc is tab colour for ST7735 displays only)
+** Description:             Reset, then initialise the TFT display registers
+***************************************************************************************/
+int TFT_eSPI::phasedInit(uint8_t tc, int phase)
+{
+  switch (phase)
+  {
+    case start:
+      if (_booted)
+      {
+        initBus();
 
-  #if defined (TFT_DC) && (TFT_DC >= 0)
-    dcpinmask = (uint32_t) digitalPinToBitMask(TFT_DC);
-  #endif
+    #if !defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
+      // Legacy bitmasks for GPIO
+      #if defined (TFT_CS) && (TFT_CS >= 0)
+        cspinmask = (uint32_t) digitalPinToBitMask(TFT_CS);
+      #endif
 
-  #if defined (TFT_WR) && (TFT_WR >= 0)
-    wrpinmask = (uint32_t) digitalPinToBitMask(TFT_WR);
-  #endif
+      #if defined (TFT_DC) && (TFT_DC >= 0)
+        dcpinmask = (uint32_t) digitalPinToBitMask(TFT_DC);
+      #endif
 
-  #if defined (TFT_SCLK) && (TFT_SCLK >= 0)
-    sclkpinmask = (uint32_t) digitalPinToBitMask(TFT_SCLK);
-  #endif
+      #if defined (TFT_WR) && (TFT_WR >= 0)
+        wrpinmask = (uint32_t) digitalPinToBitMask(TFT_WR);
+      #endif
 
-  #if defined (TFT_SPI_OVERLAP) && defined (ARDUINO_ARCH_ESP8266)
-    // Overlap mode SD0=MISO, SD1=MOSI, CLK=SCLK must use D3 as CS
-    //    pins(int8_t sck, int8_t miso, int8_t mosi, int8_t ss);
-    //spi.pins(        6,          7,           8,          0);
-    spi.pins(6, 7, 8, 0);
-  #endif
+      #if defined (TFT_SCLK) && (TFT_SCLK >= 0)
+        sclkpinmask = (uint32_t) digitalPinToBitMask(TFT_SCLK);
+      #endif
 
-  spi.begin(); // This will set HMISO to input
+      #if defined (TFT_SPI_OVERLAP) && defined (ARDUINO_ARCH_ESP8266)
+        // Overlap mode SD0=MISO, SD1=MOSI, CLK=SCLK must use D3 as CS
+        //    pins(int8_t sck, int8_t miso, int8_t mosi, int8_t ss);
+        //spi.pins(        6,          7,           8,          0);
+        spi.pins(6, 7, 8, 0);
+      #endif
 
-#else
-  #if !defined(TFT_PARALLEL_8_BIT) && !defined(RP2040_PIO_INTERFACE)
-    #if defined (TFT_MOSI) && !defined (TFT_SPI_OVERLAP) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
-      spi.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1); // This will set MISO to input
+      spi.begin(); // This will set HMISO to input
+
     #else
-      spi.begin(); // This will set MISO to input
+      #if !defined(TFT_PARALLEL_8_BIT) && !defined(RP2040_PIO_INTERFACE)
+        #if defined (TFT_MOSI) && !defined (TFT_SPI_OVERLAP) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
+          spi.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1); // This will set MISO to input
+        #else
+          spi.begin(); // This will set MISO to input
+        #endif
+      #endif
     #endif
-  #endif
-#endif
-    lockTransaction = false;
-    inTransaction = false;
-    locked = true;
+        lockTransaction = false;
+        inTransaction = false;
+        locked = true;
 
-    INIT_TFT_DATA_BUS;
+        INIT_TFT_DATA_BUS;
 
 
-#if defined (TFT_CS) && !defined(RP2040_PIO_INTERFACE)
-  // Set to output once again in case MISO is used for CS
-  if (TFT_CS >= 0) {
-    pinMode(TFT_CS, OUTPUT);
-    digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
+      #if defined (TFT_CS) && !defined(RP2040_PIO_INTERFACE)
+        // Set to output once again in case MISO is used for CS
+        if (TFT_CS >= 0) {
+          pinMode(TFT_CS, OUTPUT);
+          digitalWrite(TFT_CS, HIGH); // Chip select high (inactive)
+        }
+      #elif defined (ARDUINO_ARCH_ESP8266) && !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_SPI)
+        spi.setHwCs(1); // Use hardware SS toggling
+      #elif defined(TFT_ESPI_TEENSY)
+        CS_H;
+      #endif
+
+
+        // Set to output once again in case MISO is used for DC
+      #if defined (TFT_DC) && !defined(RP2040_PIO_INTERFACE) && !defined(TFT_DC_MANAGED)
+        if (TFT_DC >= 0) {
+          pinMode(TFT_DC, OUTPUT);
+          digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
+        }
+      #endif
+
+          _booted = false;
+          end_tft_write();
+        } // end of: if just _booted
+
+        // Toggle RST low to reset
+#if !defined(TFT_RESET_WAIT_MSEC)
+#define TFT_RESET_WAIT_MSEC 150
+#endif // !defined(TFT_RESET_WAIT_MSEC)
+    #if defined(TFT_RST)
+        #if !defined(RP2040_PIO_INTERFACE)
+          // Set to output once again in case MISO is used for TFT_RST
+          if (TFT_RST >= 0) {
+            pinMode(TFT_RST, OUTPUT);
+          }
+        #endif
+        if (TFT_RST >= 0) {
+          writecommand(0x00); // Put SPI bus in known state for TFT with CS tied low
+          digitalWrite(TFT_RST, HIGH);
+          // delay(5);
+          beginPhaseWait(5);
+          phase = reset_h;
+        }
+        else
+        {
+          writecommand(TFT_SWRST); // Software reset
+          //delay(150); // Wait for reset to complete
+          beginPhaseWait(TFT_RESET_WAIT_MSEC);
+          phase = reset_wait;
+        }
+        break;
+
+      case reset_h:
+        if (phaseKeepWaiting())
+          break;
+
+        digitalWrite(TFT_RST, LOW);
+        // delay(20);
+        beginPhaseWait(20);
+        phase = reset_l;
+        break;
+
+      case reset_l:
+        if (phaseKeepWaiting())
+          break;
+
+        digitalWrite(TFT_RST, HIGH);
+        beginPhaseWait(TFT_RESET_WAIT_MSEC);
+        phase = reset_wait;
+        break;
+
+    #else // TFT_RST
+
+        writecommand(TFT_SWRST); // Software reset
+        //delay(150); // Wait for reset to complete
+        beginPhaseWait(TFT_RESET_WAIT_MSEC);
+        phase = reset_wait;
+        break;
+
+    #endif // TFT_RST
+
+      case reset_wait:
+        if (phaseKeepWaiting())
+          break;
+
+        tc = tc; // Suppress warning
+        phase = display_init;
+
+      case display_init:        
+      // This loads the driver specific initialisation code  <<<<<<<<<<<<<<<<<<<<< ADD NEW DRIVERS TO THE LIST HERE <<<<<<<<<<<<<<<<<<<<<<<
+      // If the driver exits to allow other phased initialisations to run, then it must call end_tft_write() before
+      // it does so, and begin_tft_write() when it resumes operation. Its last action should leave the bus claimed.
+    #if   defined (ILI9341_DRIVER) || defined(ILI9341_2_DRIVER) || defined (ILI9342_DRIVER)
+        #include "TFT_Drivers/ILI9341_Init.h"
+
+    #elif defined (ST7735_DRIVER)
+        tabcolor = tc;
+        #include "TFT_Drivers/ST7735_Init.h"
+
+    #elif defined (ILI9163_DRIVER)
+        #include "TFT_Drivers/ILI9163_Init.h"
+
+    #elif defined (S6D02A1_DRIVER)
+        #include "TFT_Drivers/S6D02A1_Init.h"
+
+    #elif defined (ST7796_DRIVER)
+        #include "TFT_Drivers/ST7796_Init.h"
+
+    #elif defined (ILI9486_DRIVER)
+        #include "TFT_Drivers/ILI9486_Init.h"
+
+    #elif defined (ILI9481_DRIVER)
+        #include "TFT_Drivers/ILI9481_Init.h"
+
+    #elif defined (ILI9488_DRIVER)
+        #include "TFT_Drivers/ILI9488_Init.h"
+
+    #elif defined (HX8357D_DRIVER)
+        #include "TFT_Drivers/HX8357D_Init.h"
+
+    #elif defined (ST7789_DRIVER)
+        #include "TFT_Drivers/ST7789_Init.h"
+
+    #elif defined (R61581_DRIVER)
+        #include "TFT_Drivers/R61581_Init.h"
+
+    #elif defined (RM68140_DRIVER)
+      #include "TFT_Drivers/RM68140_Init.h"
+
+    #elif defined (ST7789_2_DRIVER)
+        #include "TFT_Drivers/ST7789_2_Init.h"
+
+    #elif defined (SSD1351_DRIVER)
+        #include "TFT_Drivers/SSD1351_Init.h"
+
+    #elif defined (SSD1963_DRIVER)
+        #include "TFT_Drivers/SSD1963_Init.h"
+
+    #elif defined (GC9A01_DRIVER)
+        #include "TFT_Drivers/GC9A01_Init.h"
+
+    #elif defined (ILI9225_DRIVER)
+        #include "TFT_Drivers/ILI9225_Init.h"
+
+    #elif defined (RM68120_DRIVER)
+        #include "TFT_Drivers/RM68120_Init.h"
+
+    #elif defined (HX8357B_DRIVER)
+        #include "TFT_Drivers/HX8357B_Init.h"
+
+    #elif defined (HX8357C_DRIVER)
+        #include "TFT_Drivers/HX8357C_Init.h"
+
+    #endif
+        phase = display_final;
+
+      case display_final:      
+    #ifdef TFT_INVERSION_ON
+        writecommand(TFT_INVON);
+    #endif
+
+    #ifdef TFT_INVERSION_OFF
+        writecommand(TFT_INVOFF);
+    #endif
+
+        end_tft_write();
+
+        setRotation(rotation);
+
+    #if defined (TFT_BL) && defined (TFT_BACKLIGHT_ON)
+        if (TFT_BL >= 0) {
+          pinMode(TFT_BL, OUTPUT);
+          digitalWrite(TFT_BL, TFT_BACKLIGHT_ON);
+        }
+    #else
+        #if defined (TFT_BL) && defined (M5STACK)
+          // Turn on the back-light LED
+          if (TFT_BL >= 0) {
+            pinMode(TFT_BL, OUTPUT);
+            digitalWrite(TFT_BL, HIGH);
+          }
+        #endif
+    #endif
+    phase = done;
   }
-#elif defined (ARDUINO_ARCH_ESP8266) && !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_SPI)
-  spi.setHwCs(1); // Use hardware SS toggling
-#elif defined(TFT_ESPI_TEENSY)
-  CS_H;
-#endif
-
-
-  // Set to output once again in case MISO is used for DC
-#if defined (TFT_DC) && !defined(RP2040_PIO_INTERFACE) && !defined(TFT_DC_MANAGED)
-  if (TFT_DC >= 0) {
-    pinMode(TFT_DC, OUTPUT);
-    digitalWrite(TFT_DC, HIGH); // Data/Command high = data mode
-  }
-#endif
-
-    _booted = false;
-    end_tft_write();
-  } // end of: if just _booted
-
-  // Toggle RST low to reset
-#ifdef TFT_RST
-  #if !defined(RP2040_PIO_INTERFACE)
-    // Set to output once again in case MISO is used for TFT_RST
-    if (TFT_RST >= 0) {
-      pinMode(TFT_RST, OUTPUT);
-    }
-  #endif
-  if (TFT_RST >= 0) {
-    writecommand(0x00); // Put SPI bus in known state for TFT with CS tied low
-    digitalWrite(TFT_RST, HIGH);
-    delay(5);
-    digitalWrite(TFT_RST, LOW);
-    delay(20);
-    digitalWrite(TFT_RST, HIGH);
-  }
-  else writecommand(TFT_SWRST); // Software reset
-#else
-  writecommand(TFT_SWRST); // Software reset
-#endif
-
-  delay(150); // Wait for reset to complete
-
-  begin_tft_write();
-
-  tc = tc; // Suppress warning
-
-  // This loads the driver specific initialisation code  <<<<<<<<<<<<<<<<<<<<< ADD NEW DRIVERS TO THE LIST HERE <<<<<<<<<<<<<<<<<<<<<<<
-#if   defined (ILI9341_DRIVER) || defined(ILI9341_2_DRIVER) || defined (ILI9342_DRIVER)
-    #include "TFT_Drivers/ILI9341_Init.h"
-
-#elif defined (ST7735_DRIVER)
-    tabcolor = tc;
-    #include "TFT_Drivers/ST7735_Init.h"
-
-#elif defined (ILI9163_DRIVER)
-    #include "TFT_Drivers/ILI9163_Init.h"
-
-#elif defined (S6D02A1_DRIVER)
-    #include "TFT_Drivers/S6D02A1_Init.h"
-
-#elif defined (ST7796_DRIVER)
-    #include "TFT_Drivers/ST7796_Init.h"
-
-#elif defined (ILI9486_DRIVER)
-    #include "TFT_Drivers/ILI9486_Init.h"
-
-#elif defined (ILI9481_DRIVER)
-    #include "TFT_Drivers/ILI9481_Init.h"
-
-#elif defined (ILI9488_DRIVER)
-    #include "TFT_Drivers/ILI9488_Init.h"
-
-#elif defined (HX8357D_DRIVER)
-    #include "TFT_Drivers/HX8357D_Init.h"
-
-#elif defined (ST7789_DRIVER)
-    #include "TFT_Drivers/ST7789_Init.h"
-
-#elif defined (R61581_DRIVER)
-    #include "TFT_Drivers/R61581_Init.h"
-
-#elif defined (RM68140_DRIVER)
-	#include "TFT_Drivers/RM68140_Init.h"
-
-#elif defined (ST7789_2_DRIVER)
-    #include "TFT_Drivers/ST7789_2_Init.h"
-
-#elif defined (SSD1351_DRIVER)
-    #include "TFT_Drivers/SSD1351_Init.h"
-
-#elif defined (SSD1963_DRIVER)
-    #include "TFT_Drivers/SSD1963_Init.h"
-
-#elif defined (GC9A01_DRIVER)
-     #include "TFT_Drivers/GC9A01_Init.h"
-
-#elif defined (ILI9225_DRIVER)
-     #include "TFT_Drivers/ILI9225_Init.h"
-
-#elif defined (RM68120_DRIVER)
-     #include "TFT_Drivers/RM68120_Init.h"
-
-#elif defined (HX8357B_DRIVER)
-    #include "TFT_Drivers/HX8357B_Init.h"
-
-#elif defined (HX8357C_DRIVER)
-    #include "TFT_Drivers/HX8357C_Init.h"
-
-#endif
-
-#ifdef TFT_INVERSION_ON
-  writecommand(TFT_INVON);
-#endif
-
-#ifdef TFT_INVERSION_OFF
-  writecommand(TFT_INVOFF);
-#endif
-
-  end_tft_write();
-
-  setRotation(rotation);
-
-#if defined (TFT_BL) && defined (TFT_BACKLIGHT_ON)
-  if (TFT_BL >= 0) {
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, TFT_BACKLIGHT_ON);
-  }
-#else
-  #if defined (TFT_BL) && defined (M5STACK)
-    // Turn on the back-light LED
-    if (TFT_BL >= 0) {
-      pinMode(TFT_BL, OUTPUT);
-      digitalWrite(TFT_BL, HIGH);
-    }
-  #endif
-#endif
+  return phase;
 }
 
 

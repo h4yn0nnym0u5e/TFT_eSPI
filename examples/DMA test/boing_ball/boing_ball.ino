@@ -76,6 +76,7 @@ void setup() {
 }
 
 void loop() {
+  bool swapBytes = tft.getSwapBytes();
 
   balloldx = (int16_t)ballx; // Save prior position
   balloldy = (int16_t)bally;
@@ -155,7 +156,9 @@ void loop() {
       } else { // Outside ball bitmap, just draw background bitmap...
         c = background[bgy][bgx1 / 8] & (0x80 >> (bgx1 & 7)) ? GRIDCOLOR : BGCOLOR;
       }
-      *destPtr++ = c<<8 | c>>8; // Store pixel colour
+      *destPtr++ = swapBytes // Store pixel colour, honouring the swap setting
+                ?(c<<8 | c>>8)
+                :c; 
       bx1++;  // Increment bitmap position counters (X axis)
       bgx1++;
     }
@@ -172,11 +175,14 @@ void loop() {
   //if (random(100) == 1) delay(2000);
   tft.endWrite();
   //delay(5);
-  // Show approximate frame rate
-  if(!(++frame & 255)) { // Every 256 frames...
-    uint32_t elapsed = (millis() - startTime) / 1000; // Seconds
+
+  // Show approximate frame rate: will go wrong after ~43M frames
+  // due to the 32-bit frame count. 47hr @ 250fps.
+  if(!(++frame & 255))  // Every 256 frames...
+  {
+    uint32_t elapsed = (millis() - startTime) / 10; // centiseconds
     if(elapsed) {
-      Serial.print(frame / elapsed);
+      Serial.print(frame * 100 / elapsed); // ... show fps value
       Serial.println(" fps");
     }
   }

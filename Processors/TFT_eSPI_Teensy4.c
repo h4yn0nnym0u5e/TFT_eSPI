@@ -401,7 +401,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
   hardware->CR =
       LPSPI_CR_MEN | LPSPI_CR_RRF | LPSPI_CR_RTF; // actually clear both...
   hardware->SR = 0x3f00; // clear out all of the other status...
-  
+
   maybeUpdateTCR(_tcr_dc_not_assert |
                   LPSPI_TCR_FRAMESZ(7)); // output Command with 8 bits
   cleanupIsNeeded = false;
@@ -475,7 +475,8 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels,
   pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts for now
   pDMA->disableOnCompletion(); // disable DMA when done
 
-  arm_dcache_flush(image, pixels * sizeof *image); // this can take some time!
+  if ((uint32_t) image >= 0x2020'0000) // is there a linkable symbol for this?
+    arm_dcache_flush(image, pixels * sizeof *image); // this can take some time!
 
   // Fix up the remaining pixels
   mainTransfer *= LOOP_MINOR_PIXELS; // pixels transferred by first TCD

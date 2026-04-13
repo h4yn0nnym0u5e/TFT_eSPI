@@ -24,7 +24,7 @@
 // Specify Teensy
 #define TFT_ESPI_TEENSY
 
-// Only define one driver, the other ones must be commented out
+// Only define one driver, any other ones must be commented out
 //#define ILI9341_DRIVER       // Generic driver for common displays
 //#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
 //#define ST7735_DRIVER      // Define additional parameters below for this display
@@ -78,21 +78,12 @@
 //
 // ##################################################################################
 
-// If a backlight control signal is available then define the TFT_BL pin in Section 2
-// below. The backlight will be turned ON when tft.begin() is called, but the library
-// needs to know if the LEDs are ON with the pin HIGH or LOW. If the LEDs are to be
-// driven with a PWM signal or turned OFF/ON then this must be handled by the user
-// sketch. e.g. with digitalWrite(TFT_BL, LOW);
-
-// #define TFT_BL   32            // LED back-light control pin
-// #define TFT_BACKLIGHT_ON HIGH  // Level to turn ON back-light (HIGH or LOW)
-
-// ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR ESP8266 SETUP ######
+// ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR TEENSY SETUP ######
 
 #define TFT_DC   10 // this IS used: pin 10 should give optimised SPI transactions...
 #define TFT_DC_MANAGED // ... if this symbol is defined - means its setting MUST NOT be changed
 
-// for ST7796 seems that DC=10, managed requires TFT_INIT_ONE_TRANSACTION_PER_COMMAND
+// For ST7796 it seems that DC=10, managed requires TFT_INIT_ONE_TRANSACTION_PER_COMMAND
 // Not necessarily true for other displays...
 #if defined(TFT_DC_MANAGED) && !defined(TFT_INIT_ONE_TRANSACTION_PER_COMMAND)
     #define TFT_INIT_ONE_TRANSACTION_PER_COMMAND
@@ -104,12 +95,30 @@
 #define TFT_MISO 12
 #define TFT_MOSI 11
 
+
+// If a backlight control signal is available then define the TFT_BL pin 
+// below. The backlight will be turned ON when tft.begin() is called, but the library
+// needs to know if the LEDs are ON with the pin HIGH or LOW. If the LEDs are to be
+// driven with a PWM signal or turned OFF/ON then this must be handled by the user
+// sketch. e.g. with digitalWrite(TFT_BL, LOW);
+
+/*
+
+// Macros which allow control at sketch level, for multiple displays
 #define TFT_CS   CS_from_constructor
-//#define TFT_CS   31  // Chip select control
-#define TFT_RST  -1     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
+#define TFT_RST  -1
+//#define TFT_BL PIN_D1  // LED back-light (only for displays with backlight control pin)
+// #define TFT_BACKLIGHT_ON HIGH
 
+/*/
 
-//#define TFT_BL PIN_D1  // LED back-light (only for ST7789 with backlight control pin)
+// Traditional TFT_eSPI macros, for a single display
+#define TFT_CS   29  // Chip select control
+#define TFT_BL   33
+#define TFT_BACKLIGHT_ON HIGH
+#define TFT_RST  34     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
+
+//*/
 
 #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
 
@@ -151,7 +160,8 @@
 // #define SPI_FREQUENCY  16'000'000
 // #define SPI_FREQUENCY  20'000'000
 // #define SPI_FREQUENCY  27'000'000
-#define SPI_FREQUENCY  40'000'000
+// #define SPI_FREQUENCY  40'000'000
+#define SPI_FREQUENCY  60'000'000
 // #define SPI_FREQUENCY  55'000'000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
 // #define SPI_FREQUENCY  80'000'000
 

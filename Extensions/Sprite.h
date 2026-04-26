@@ -126,7 +126,7 @@ class TFT_eSprite : public TFT_eSPI {
   uint16_t readPixelValue(int32_t x, int32_t y);
 
            // Write an image (colour bitmap) to the sprite.
-  void     pushImage(int32_t x0, int32_t y0, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp = 0);
+  void     pushImage(int32_t x0, int32_t y0, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp = 0, int32_t transparent = -1);
   void     pushImage(int32_t x0, int32_t y0, int32_t w, int32_t h, const uint16_t *data);
 
            // Push the sprite to the TFT screen, this fn calls pushImage() in the TFT class.

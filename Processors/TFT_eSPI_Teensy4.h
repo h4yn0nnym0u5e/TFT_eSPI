@@ -253,10 +253,11 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
 
     void maybeUpdateTCR(uint32_t requested_tcr_state);
     void prepSPIforDMA(void);
+    void SPIsendDirect(uint16_t* pdata, uint32_t len);
     bool SPItransmitComplete(void);
     void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
     void fixupSPIafterDMA(void);
-    void prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
+    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
     void startDMAtransfer(void);
     void finishDMAtransfer(void);
     bool cleanupNeeded(void) { return cleanupIsNeeded; }

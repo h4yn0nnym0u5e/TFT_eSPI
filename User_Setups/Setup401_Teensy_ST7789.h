@@ -57,7 +57,7 @@
 // Try ONE option at a time to find the correct colour order for your display
 
 //  #define TFT_RGB_ORDER TFT_RGB  // Colour order Red-Green-Blue
-//  #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
+  #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
 
 
 // For ST7789, ST7735, ILI9163 and GC9A01 ONLY, define the 
@@ -70,7 +70,8 @@
 // #define TFT_WIDTH  128
 // #define TFT_WIDTH  172 // ST7789 172 x 320
 // #define TFT_WIDTH  170 // ST7789 170 x 320
-#define TFT_WIDTH  240 // ST7789 240 x 240 and 240 x 320
+// #define TFT_WIDTH  240 // ST7789 240 x 240 and 240 x 320
+#define TFT_WIDTH  320 // ST7789 240 x 240 and 240 x 320
 
 // #define TFT_HEIGHT 160
 // #define TFT_HEIGHT 128
@@ -132,10 +133,10 @@
 
 #define TFT_CS   CS_from_constructor
 //#define TFT_CS   31  // Chip select control
-#define TFT_RST  -1     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
+#define TFT_RST  9     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
 
-
-//#define TFT_BL PIN_D1  // LED back-light (only for ST7789 with backlight control pin)
+#define TFT_BL  14  // LED back-light (only for ST7789 with backlight control pin)
+#define TFT_BACKLIGHT_ON HIGH
 
 #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
 

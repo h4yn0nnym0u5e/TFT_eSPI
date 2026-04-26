@@ -1044,7 +1044,7 @@ uint16_t TFT_eSprite::readPixel(int32_t x, int32_t y)
 ** Function name:           pushImage
 ** Description:             push image into a defined area of a sprite
 ***************************************************************************************/
-void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp)
+void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp, int32_t transparent)
 {
   if (data == nullptr || !_created) return;
 
@@ -1052,33 +1052,66 @@ void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_
 
   if (_bpp == 16) // Plot a 16 bpp image into a 16 bpp Sprite
   {
-    // Pointer within original image
-    uint8_t *ptro = (uint8_t *)data + ((dx + dy * w) << 1);
-    // Pointer within sprite image
-    uint8_t *ptrs = (uint8_t *)_img + ((x + y * _iwidth) << 1);
-
-    if(_swapBytes)
+    if (-1 == transparent)
     {
-      while (dh--)
+      // Pointer within original image
+      uint8_t *ptro = (uint8_t *)data + ((dx + dy * w) << 1);
+      // Pointer within sprite image
+      uint8_t *ptrs = (uint8_t *)_img + ((x + y * _iwidth) << 1);
+
+      if(_swapBytes)
       {
-        // Fast copy with a 1 byte shift
-        memcpy(ptrs+1, ptro, (dw<<1) - 1);
-        // Now correct just the even numbered bytes
-        for (int32_t xp = 0; xp < (dw<<1); xp+=2)
+        while (dh--)
         {
-          ptrs[xp] = ptro[xp+1];;
+          // Fast copy with a 1 byte shift
+          memcpy(ptrs+1, ptro, (dw<<1) - 1);
+          // Now correct just the even numbered bytes
+          for (int32_t xp = 0; xp < (dw<<1); xp+=2)
+          {
+            ptrs[xp] = ptro[xp+1];;
+          }
+          ptro += w<<1;
+          ptrs += _iwidth<<1;
         }
-        ptro += w<<1;
-        ptrs += _iwidth<<1;
+      }
+      else
+      {
+        while (dh--)
+        {
+          memcpy(ptrs, ptro, dw<<1);
+          ptro += w << 1;
+          ptrs += _iwidth << 1;
+        }
       }
     }
     else
     {
-      while (dh--)
-      {
-        memcpy(ptrs, ptro, dw<<1);
-        ptro += w << 1;
-        ptrs += _iwidth << 1;
+        data += dx + dy*w;
+        uint16_t* dst = _img + x + y*_iwidth;
+
+        if(_swapBytes)
+        {
+          while (dh--)
+          {
+            for (int i=0;i<dw;i++)
+              if (transparent != data[i]) 
+                dst[i] = data[i] << 8 | data[i] >> 8;
+
+            data += w;
+            dst += _iwidth;
+          }
+        }
+        else
+        {
+          while (dh--)
+          {
+            for (int i=0;i<dw;i++)
+              if (transparent != data[i]) 
+                dst[i] = data[i];
+
+            data += w;
+            dst += _iwidth;
+          }
       }
     }
   }

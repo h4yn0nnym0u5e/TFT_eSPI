@@ -390,6 +390,25 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepSPIforDMA(void)
 }
 
 
+/*
+ * Stupidly small number of pixels, they'll fit 
+ * in the FIFO, so just send them
+ */
+void TFT_eSPI_Teensy4_SPI_with_DMA::SPIsendDirect(uint16_t* pdata, uint32_t len)
+{
+  uint32_t max = (1 << (hardware->PARAM & 0xFF)) - 1; // max words possible in Tx FIFO
+  hardware->DER = 0; // DMA not going to do TX (or RX)
+
+  while (0 != len)
+  {
+    if (LPSPI_FSR_TXCOUNT(hardware->FSR) < max)
+    {
+      hardware->TDR = *pdata++;
+      len--;
+    }
+  }
+}
+
 void TFT_eSPI_Teensy4_SPI_with_DMA::fixupSPIafterDMA(void)
 {
   waitTransmitComplete();
@@ -463,7 +482,7 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::SPI2_DMA_ISR(void)
  * Sets up source address, SPI transmit register, trigger and interrupts.
  * Also flushes the source cache to RAM
  */
-void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft)
+bool TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft)
 {
   int mainTransfer = pixels / LOOP_MINOR_PIXELS;
   
@@ -493,6 +512,8 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::prepDMAtransfer(uint16_t* image, int pixels,
     pDMA->interruptAtCompletion(); // just main transfer - interrupt after that
 
   currentDMAtft = &tft; // stash pointer to the display that's currently using the DMA+SPI
+
+  return pixels > LOOP_MINOR_PIXELS;
 }
 
 
@@ -559,20 +580,24 @@ void TFT_eSPI::dmaWait(void)
   {
     spi_dma.finishDMAtransfer();
     spi_dma.fixupSPIafterDMA();
-    //end_tft_write();
   }
 }
 
 void TFT_eSPI::pushPixelsDMA(uint16_t* image, // pointer to image data
                              uint32_t len)    // length of image data in pixels
 {
-  dmaWait(); // should take no time as long as previous DMA is finished
+  if (len > 0)
+  {
+    dmaWait(); // should take no time as long as previous DMA is finished
 
-  spi_dma.prepDMAtransfer(image, len, *this);  // get DMA channel ready
+    bool notTooShort = spi_dma.prepDMAtransfer(image, len, *this);  // get DMA channel ready
+    spi_dma.prepSPIforDMA();      // get SPI hardware ready
 
-  //begin_tft_write();          // this modifies the SPI settings!
-  spi_dma.prepSPIforDMA();    // get SPI hardware ready
-  spi_dma.startDMAtransfer(); 
+    if (notTooShort)                      // is it actually worth doing via DMA?
+      spi_dma.startDMAtransfer();        // yes
+    else
+      spi_dma.SPIsendDirect(image, len); // no, shove pixels straight into FIFO
+  }
 }
 
 void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, 

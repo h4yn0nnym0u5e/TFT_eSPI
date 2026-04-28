@@ -632,11 +632,42 @@ void TFT_eSPI::init(uint8_t tc)
 /***************************************************************************************
 ** Function name:           init (tc is tab colour for ST7735 displays only)
 ** Description:             Reset, then initialise the TFT display registers
+**
+** Usage:
+** The first call must set phase to 0, and store the returned value.
+**
+** Each subsequent call must use the previously returned phase value, 
+** until the returned value is -1 (done), at which point display initialisation
+** is complete.
+**
+** The display-specific initialisation code (supplied in <display>_Init.h) will 
+** first start executing with a phase value of 20 (display_init). A variant 
+** supporting phased init should be written as part of a switch ... case block.
+** Each case must execute any transfers, but when it needs a delay(),
+** instead call beginPhaseWait(<delay value>), increment phase, and break;
+** 
+** The next case must start with if (phaseKeepWaiting()) break; to implement
+** the display-mandated delay; when phaseKeepWaiting() returns false, the 
+** delay time will have expired and initialisation transfers can continue.
+**
+** Reasons to use this:
+** If you have multiple displays, you can use phasedInit() on all of them in a 
+** round-robin fashion, (obviously storing each one's phase separately), until
+** all have completed. During one display's delay time, another can be doing
+** transfers, thus interleaving all the initialisations and having a total
+** time corresponding roughly to the longest-required time, rather than each
+** one added together.
+**
+** Examples:
+** ST7789_Init.h (ST7789_PHASED section), and Setup404_Teensy_ST7789.h
 ***************************************************************************************/
 int TFT_eSPI::phasedInit(uint8_t tc, int phase)
 {
   switch (phase)
   {
+    default: // includes 'done'
+      break;
+
     case start:
       if (_booted)
       {
@@ -870,6 +901,7 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
     #endif
     phase = done;
   }
+
   return phase;
 }
 

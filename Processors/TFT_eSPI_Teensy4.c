@@ -263,9 +263,20 @@ void TFT_eSPI::pushPixels(const void* data_in, uint32_t len){
 TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr) 
       : cleanupIsNeeded{false}, DMAidle{true},
         currentDMAtft{nullptr},
-        pSPI(&spi), pDMA(nullptr), 
+        pSPI(new TTFT_eSPI_Teensy4_SPIClass<SPIClass>(spi)), 
+        pDMA(nullptr), 
         hardware{(IMXRT_LPSPI_t*) phw},
         SPIattr{attr}
+        {}
+
+
+TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(FlexIOSPI& spi, const SPIClass::SPI_Hardware_t& dummy) 
+      : cleanupIsNeeded{false}, DMAidle{true},
+        currentDMAtft{nullptr},
+        pSPI(new TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI>(spi)), 
+        pDMA(nullptr), 
+        hardware{nullptr},
+        SPIattr{dummy}
         {}
 
 
@@ -367,11 +378,11 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::initDMA(void)
   if (nullptr != pDMA)
   {
     pDMA->begin();
-    if (pSPI == &SPI)
+    if (pSPI->getHWaddr() == &SPI)
       pDMA->attachInterrupt(SPI_DMA_ISR);
-    else if (pSPI == &SPI1)
+    else if (pSPI->getHWaddr() == &SPI1)
       pDMA->attachInterrupt(SPI1_DMA_ISR);
-    if (pSPI == &SPI2)
+    if (pSPI->getHWaddr() == &SPI2)
       pDMA->attachInterrupt(SPI2_DMA_ISR);
   }
 }
@@ -616,3 +627,4 @@ void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h,
   setWindow(x, y, x + w - 1, y + h - 1);
   pushPixelsDMA((uint16_t*) buffer,pixels);
 }
+

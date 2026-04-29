@@ -459,14 +459,23 @@ class TFT_eSPI : public Print
  //--------------------------------------- public ------------------------------------//
  public:
 
+#if !defined(TFT_ESPI_MULTI_SPI)
+  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
+#else
+  TFT_eSPI(int16_t _W, int16_t _H
+           , TFT_eSPI_Teensy4_SPIClass& _spi, int _cs = -1
+           , void (*_CSfn)(bool negate) = nullptr          
+          );
   TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT
-#if defined(TFT_ESPI_MULTI_SPI)
            , SPIClass& _spi = SPI, int _cs = -1
            , void (*_CSfn)(bool negate) = nullptr          
+          ) : TFT_eSPI(_W,_H,
+                       *new TTFT_eSPI_Teensy4_SPIClass<SPIClass>{_spi},
+                       _cs, _CSfn) 
+            {}
 #endif // defined(TFT_ESPI_MULTI_SPI)     
-          );
 
-  // init() and begin() are equivalent, begin() included for backwards compatibility
+// init() and begin() are equivalent, begin() included for backwards compatibility
   // Sketch defined tab colour option is for ST7735 displays only
   void     init(uint8_t tc = TAB_COLOUR), begin(uint8_t tc = TAB_COLOUR);
 
@@ -872,7 +881,15 @@ class TFT_eSPI : public Print
 
   // Global variables
 #if !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_INTERFACE)
-  /* static */   SPIClass& getSPIinstance(void); // Get SPI class handle
+  /* static */   
+  #if defined(TFT_ESPI_MULTI_SPI)
+    TFT_eSPI_Teensy4_SPIClass& 
+  #else
+    SPIClass&
+  #endif // defined(TFT_ESPI_MULTI_SPI)
+
+        getSPIinstance(void); // Get SPI class handle
+
 #endif
   uint32_t textcolor, textbgcolor;         // Text foreground and background colours
 
@@ -956,7 +973,7 @@ class TFT_eSPI : public Print
  //-------------------------------------- protected ----------------------------------//
  public: // protected:
 #if defined(TFT_ESPI_MULTI_SPI)
-  SPIClass& spi;
+  TFT_eSPI_Teensy4_SPIClass& spi;
   static TFT_eSPI_Teensy4_SPD_Factory factory;
   TFT_eSPI_Teensy4_SPI_with_DMA& spi_dma;
   int CS_from_constructor{-1};

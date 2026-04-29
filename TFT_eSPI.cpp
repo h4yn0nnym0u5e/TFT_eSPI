@@ -440,7 +440,7 @@ bool TFT_eSPI::clipWindow(int32_t *xs, int32_t *ys, int32_t *xe, int32_t *ye)
 ***************************************************************************************/
 TFT_eSPI::TFT_eSPI(int16_t w, int16_t h
 #if defined(TFT_ESPI_MULTI_SPI)     
-                  , SPIClass& _spi, int _cs,
+                  , TFT_eSPI_Teensy4_SPIClass& _spi, int _cs,
                   void (*_CSfn)(bool))
   : spi(_spi), spi_dma(factory.getInstance(_spi)), CS_from_constructor(_cs), CSfn(_CSfn)
 #else
@@ -6057,7 +6057,14 @@ void TFT_eSPI::setTextFont(uint8_t f)
 ** Description:             Get the instance of the SPI class
 ***************************************************************************************/
 #if !defined (TFT_PARALLEL_8_BIT) && !defined (RP2040_PIO_INTERFACE)
-SPIClass& TFT_eSPI::getSPIinstance(void)
+
+#if defined(TFT_ESPI_MULTI_SPI)
+TFT_eSPI_Teensy4_SPIClass& 
+#else
+SPIClass&
+#endif // defined(TFT_ESPI_MULTI_SPI)
+
+TFT_eSPI::getSPIinstance(void)
 {
   return spi;
 }

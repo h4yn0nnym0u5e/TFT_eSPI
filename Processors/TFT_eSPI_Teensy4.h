@@ -7,6 +7,8 @@
 #ifndef _TFT_eSPI_TEENSYH_
 #define _TFT_eSPI_TEENSYH_
 
+#include <FlexIOSPI.h>
+
 // We would
 // #include <core_cm7.h>
 // but it doesn't work, so
@@ -216,6 +218,63 @@ extern uint8_t external_psram_size;
 ////////////////////////////////////////////////////////////////////////////////////////
 // Teensy 4.x DMA-related stuff
 ////////////////////////////////////////////////////////////////////////////////////////
+// Class to allow use of either LPSPI or FlexIOSPI
+class TFT_eSPI_Teensy4_SPIClass
+{
+  public:
+    virtual ~TFT_eSPI_Teensy4_SPIClass() {}
+    virtual void* getHWaddr(void) = 0;
+    virtual void  begin(void) = 0;
+    virtual void  beginTransaction(FlexIOSPISettings settings) = 0;
+    virtual void  endTransaction(void) = 0;
+    virtual uint8_t  transfer(uint8_t c) = 0;
+    virtual uint16_t transfer16(uint16_t w) = 0;
+    virtual uint8_t pinIsChipSelect(uint8_t pin) = 0;
+    virtual uint8_t setCS(uint8_t pin) = 0;
+};
+
+template <class SPIhw>
+class TTFT_eSPI_Teensy4_SPIClass : public TFT_eSPI_Teensy4_SPIClass
+{
+public:	
+	TTFT_eSPI_Teensy4_SPIClass(SPIhw& _hw) : hw{_hw} {}
+	SPIhw& hw;
+  virtual void* getHWaddr(void) { return (void*) &hw; };
+
+	virtual void begin(void) { hw.begin(); }
+	virtual void beginTransaction(FlexIOSPISettings s) { hw.beginTransaction(s); }
+	virtual void endTransaction(void)   { hw.endTransaction(); }
+	virtual uint8_t transfer(uint8_t b) { return hw.transfer(b); }
+	virtual uint16_t transfer16(uint16_t b) { return hw.transfer16(b); }
+	//virtual void transfer(void *buf, size_t count) { hw.transfer(buf, count); }
+	//virtual void transfer(const void * buf, void * retbuf, uint32_t count) { hw.transfer(buf, retbuf, count);}
+  virtual uint8_t pinIsChipSelect(uint8_t pin) { return hw.pinIsChipSelect(pin); };
+  virtual uint8_t setCS(uint8_t pin) { return hw.setCS(pin); };
+};
+
+// template specialization for SPIClass: allow beginTransaction 
+// to use the less-opaque FlexIOSPISettings
+template<>
+inline uint8_t TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI>::pinIsChipSelect(uint8_t pin)
+{
+  return 0;
+}
+
+template<>
+inline uint8_t TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI>::setCS(uint8_t pin)
+{
+  return 0;
+}
+
+template<>
+inline void TTFT_eSPI_Teensy4_SPIClass<SPIClass>::beginTransaction(FlexIOSPISettings s)
+{
+	SPISettings ss{s._clock,s._bitOrder,s._dataMode};
+	hw.beginTransaction(ss);
+}
+#define SPISettings FlexIOSPISettings // hack all subsequent occurrences!
+
+
 // Ngleton class to ensure clean access to one of the 
 // three SPI busses, even if multiple displays are in use
 class TFT_eSPI;
@@ -238,16 +297,21 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     bool DMAidle;
 
     TFT_eSPI* currentDMAtft;
-    SPIClass* pSPI;
+    TFT_eSPI_Teensy4_SPIClass* pSPI;
     DMAChannel* pDMA;
     IMXRT_LPSPI_t*  hardware; // actual peripheral
     const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
     DMASetting chain; // settings to chain to for last few pixels
+    
+    TFT_eSPI_Teensy4_SPI_with_DMA(FlexIOSPI& spi, const SPIClass::SPI_Hardware_t& dummy); 
   public:
     TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
+    TFT_eSPI_Teensy4_SPI_with_DMA(FlexIOSPI& spi) 
+      : TFT_eSPI_Teensy4_SPI_with_DMA(spi, SPIClass::spiclass_lpspi4_hardware)
+      {}
     void begin();
 
-    SPIClass&   getSPI(void) { return *pSPI; }      
+    TFT_eSPI_Teensy4_SPIClass&   getSPI(void) { return *pSPI; }      
     DMAChannel& getDMA(void) { return *pDMA; }
     IMXRT_LPSPI_t& getHardware(void) { return *hardware; }
 
@@ -297,18 +361,27 @@ class TFT_eSPI_Teensy4_SPD_Factory
     }
 
   public:
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(SPIClass& spi)
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(void* s)
     {
-      SPIClass* s = &spi;
-
       if (s == &SPI1)
-          return getSPI1(*s);
+          return getSPI1(*((SPIClass*) s));
       else if (s == &SPI2)
-          return getSPI2(*s);
+          return getSPI2(*((SPIClass*) s));
 
       // if (s == &SPI)
-      return getSPI(*s); // must return something!     
+      return getSPI(*((SPIClass*) s)); // must return something!     
     }
+
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(TFT_eSPI_Teensy4_SPIClass& spi)
+    {
+      return getInstance(spi.getHWaddr());
+    }
+
+    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(SPIClass& spi)
+    {
+      return getInstance(&spi);
+    }
+
 
     // publicly disable copy and assignment
     TFT_eSPI_Teensy4_SPD_Factory(TFT_eSPI_Teensy4_SPD_Factory const&) = delete;

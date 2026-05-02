@@ -459,20 +459,29 @@ class TFT_eSPI : public Print
  //--------------------------------------- public ------------------------------------//
  public:
 
-#if !defined(TFT_ESPI_MULTI_SPI)
-  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
-#else
+#if defined(TFT_ESPI_MULTI_SPI)
   TFT_eSPI(int16_t _W, int16_t _H
            , TFT_eSPI_Teensy4_SPIClass& _spi, int _cs = -1
            , void (*_CSfn)(bool negate) = nullptr          
           );
+
   TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT
            , SPIClass& _spi = SPI, int _cs = -1
            , void (*_CSfn)(bool negate) = nullptr          
           ) : TFT_eSPI(_W,_H,
-                       *new TTFT_eSPI_Teensy4_SPIClass<SPIClass>{_spi},
+                       factory.getInstance(_spi),
                        _cs, _CSfn) 
             {}
+
+  TFT_eSPI(int16_t _W, int16_t _H
+           , FlexIOSPI& _spi, int _cs = -1
+           , void (*_CSfn)(bool negate) = nullptr          
+          ) : TFT_eSPI(_W,_H,
+                       factory.getInstance(_spi),
+                       _cs, _CSfn) 
+            {}
+#else
+  TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
 #endif // defined(TFT_ESPI_MULTI_SPI)     
 
 // init() and begin() are equivalent, begin() included for backwards compatibility
@@ -973,9 +982,9 @@ class TFT_eSPI : public Print
  //-------------------------------------- protected ----------------------------------//
  public: // protected:
 #if defined(TFT_ESPI_MULTI_SPI)
-  TFT_eSPI_Teensy4_SPIClass& spi;
-  static TFT_eSPI_Teensy4_SPD_Factory factory;
-  TFT_eSPI_Teensy4_SPI_with_DMA& spi_dma;
+  static TFT_eSPI_Teensy4_SPD_Factory factory; // yields one of a fixed number of TFT_eSPI_Teensy4_SPIClass objects
+  TFT_eSPI_Teensy4_SPIClass& spi; // a simple SPI-like object, used for begin/end transaction, used to build...
+  TFT_eSPI_Teensy4_SPI_with_DMA& spi_dma; // ...a DMA-aware-SPI object
   int CS_from_constructor{-1};
   void (*CSfn)(bool negate); // method to run to change /CS: parameter LOW asserts /CS, to match digtalWrite()
 #endif // defined(TFT_ESPI_MULTI_SPI)

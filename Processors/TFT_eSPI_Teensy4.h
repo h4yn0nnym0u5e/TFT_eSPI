@@ -111,7 +111,7 @@ extern uint8_t external_psram_size;
 // Macros to write commands/pixel colour data to a SPI ILI948x TFT
 ////////////////////////////////////////////////////////////////////////////////////////
 // How to access SPI:
-#define spi spi_dma.getSPI()
+//#define spi spi_dma.getSPI()
 
 #if  defined (SPI_18BIT_DRIVER) // SPI 18-bit colour
 
@@ -167,9 +167,9 @@ extern uint8_t external_psram_size;
       #define tft_Write_16(C)  tft_Write_8((uint8_t)((C)>>8));tft_Write_8((uint8_t)((C)>>0))
       #define tft_Write_16S(C) tft_Write_8((uint8_t)((C)>>0));tft_Write_8((uint8_t)((C)>>8))
     #else
-      #define tft_Write_8(C)   spi.transfer(C)
-      #define tft_Write_16(C)  spi.transfer16(C)
-      #define tft_Write_16S(C) spi.transfer16(((C)>>8) | ((C)<<8))
+      #define tft_Write_8(C)   spi_dma.getSPI().transfer(C)
+      #define tft_Write_16(C)  spi_dma.getSPI().transfer16(C)
+      #define tft_Write_16S(C) spi_dma.getSPI().transfer16(((C)>>8) | ((C)<<8))
     #endif // AVR    
 
     #define tft_Write_32(C) \
@@ -210,7 +210,7 @@ extern uint8_t external_psram_size;
   #define SCLK_H digitalWrite(TFT_SCLK, LOW)
 #else
   // Use a SPI read transfer
-  #define tft_Read_8() spi.transfer(0)
+  #define tft_Read_8() spi_dma.getSPI().transfer(0)
 #endif
 
 #undef spi // done with sleazy hack
@@ -218,40 +218,175 @@ extern uint8_t external_psram_size;
 ////////////////////////////////////////////////////////////////////////////////////////
 // Teensy 4.x DMA-related stuff
 ////////////////////////////////////////////////////////////////////////////////////////
+//                                 
+//     .d8888b.  8888888b. 8888888 
+//    d88P  Y88b 888   Y88b  888   
+//    Y88b.      888    888  888   
+//     "Y888b.   888   d88P  888   
+//        "Y88b. 8888888P"   888   
+//          "888 888         888   
+//    Y88b  d88P 888         888   
+//     "Y8888P"  888       8888888 
+//                                 
 // Class to allow use of either LPSPI or FlexIOSPI
+class TFT_eSPI;
 class TFT_eSPI_Teensy4_SPIClass
 {
   public:
     virtual ~TFT_eSPI_Teensy4_SPIClass() {}
     virtual void* getHWaddr(void) = 0;
+    virtual void DMA_ISR(void) = 0;
     virtual void  begin(void) = 0;
     virtual void  beginTransaction(FlexIOSPISettings settings) = 0;
     virtual void  endTransaction(void) = 0;
     virtual uint8_t  transfer(uint8_t c) = 0;
     virtual uint16_t transfer16(uint16_t w) = 0;
-    virtual uint8_t pinIsChipSelect(uint8_t pin) = 0;
-    virtual uint8_t setCS(uint8_t pin) = 0;
+
+    //virtual uint8_t pinIsChipSelect(uint8_t pin) = 0;
+    //virtual uint8_t setCS(uint8_t pin) = 0; // this sets which pin is used for CS
+
+    virtual void DCcmd(void) = 0;
+    virtual void DCdata(void) = 0;
+    virtual void initDMA(void) = 0;
+    virtual void deInitDMA(void) = 0;
+    virtual void prepSPIforDMA(void) = 0;
+    virtual void fixupSPIafterDMA(void) = 0;
+    virtual void SPIsendDirect(uint16_t* pdata, uint32_t len) = 0;
+    virtual bool SPItransmitComplete(void) = 0;
+    virtual bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft) = 0;
+    virtual void startDMAtransfer(void) = 0;
+    virtual void finishDMAtransfer(void) = 0;
+    virtual bool dmaBusy(void) = 0;
 };
 
-template <class SPIhw>
+class TFT_eSPI_Teensy4_SPI_Helper
+{    
+    // SPI
+    uint32_t _spi_fcr_save;
+    uint32_t _spi_tcr_current;
+    uint32_t _tcr_dc_assert;
+    uint32_t _tcr_dc_not_assert;
+    uint32_t _dcpinmask;
+    volatile uint32_t *_dcport;
+
+    SPIClass& spi;
+    IMXRT_LPSPI_t* hardware{0}; // pointer to actual peripheral registers
+    const SPIClass::SPI_Hardware_t& SPIattr; // holds DMA trigger source setting
+
+    // DMA
+    const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
+    DMAChannel* pDMA;
+    TFT_eSPI* currentDMAtft;
+    DMASetting chain;
+    bool DMAidle;
+
+    void maybeUpdateTCR(uint32_t requested_tcr_state);
+  public:
+    TFT_eSPI_Teensy4_SPI_Helper(SPIClass& _spi, uint32_t _phw, const SPIClass::SPI_Hardware_t& _attr)
+         : spi{_spi}, hardware{(IMXRT_LPSPI_t*) _phw}, SPIattr{_attr}
+           {}
+
+    //uint8_t pinIsChipSelect(uint8_t pin) { return spi.pinIsChipSelect(pin); };
+    //uint8_t setCS(uint8_t pin) { return spi.setCS(pin); };
+    void beginTransaction(FlexIOSPISettings s)
+    {
+      SPISettings ss{s._clock,s._bitOrder,s._dataMode};
+      spi.beginTransaction(ss);
+    }
+
+    void begin(void);
+    bool SPItransmitComplete(void);
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) ; }
+    void DCcmd(void);
+    void DCdata(void);
+    void initDMA(void);
+    void deInitDMA(void) { delete pDMA; pDMA = nullptr; }
+    void prepSPIforDMA(void);
+    void sendDirect16(uint16_t* pdata, uint32_t len);
+    void fixupSPIafterDMA(void);
+    void DMA_ISR(void);
+    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
+    void startDMAtransfer(void);
+    void finishDMAtransfer(void);
+    bool dmaBusy(void);
+};
+
+class TFT_eSPI_Teensy4_FlexIOSPI_Helper
+{
+    FlexIOSPI& spi;
+  public:
+    TFT_eSPI_Teensy4_FlexIOSPI_Helper(FlexIOSPI& _spi) : spi{_spi} {}
+
+    //uint8_t pinIsChipSelect(uint8_t pin) { return 0; };
+    //uint8_t setCS(uint8_t pin) { return 0; };
+    void beginTransaction(FlexIOSPISettings s)
+    {
+      spi.beginTransaction(s);
+    }
+
+    void begin(void){}
+    bool SPItransmitComplete(void){ return true; }
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) ; }
+    void DCcmd(void){}
+    void DCdata(void){}
+    void initDMA(void){}
+    void deInitDMA(void){}
+    void prepSPIforDMA(void){}
+    void sendDirect16(uint16_t* pdata, uint32_t len){}
+    void fixupSPIafterDMA(void){}
+    void DMA_ISR(void){}
+    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft){ return true; }
+    void startDMAtransfer(void){}
+    void finishDMAtransfer(void){}
+    bool dmaBusy(void){ return false; }
+};
+
+/*
+ * There MUST be only ONE of these constructed for each LPSPI or 
+ * FlexIOSPI hardware instance: this is controlled by the
+ * TFT_eSPI_Teensy4_SPD_Factory class, which will provide a 
+ * static reference on demand. It is opaque to the user of this
+ * class as to which SPI bus is in use.
+ */
+template <class SPIhw, class SPIhelper>
 class TTFT_eSPI_Teensy4_SPIClass : public TFT_eSPI_Teensy4_SPIClass
 {
-public:	
-	TTFT_eSPI_Teensy4_SPIClass(SPIhw& _hw) : hw{_hw} {}
-	SPIhw& hw;
-  virtual void* getHWaddr(void) { return (void*) &hw; };
+  public:	
+    TTFT_eSPI_Teensy4_SPIClass(SPIhw& _hw, SPIhelper& _hlp) 
+      : hw{_hw}, helper(_hlp)
+        {}
+    SPIhw& hw;
+    SPIhelper& helper;
+    virtual void DMA_ISR(void) { helper.DMA_ISR(); }
+    virtual void* getHWaddr(void) { return (void*) &hw; };
 
-	virtual void begin(void) { hw.begin(); }
-	virtual void beginTransaction(FlexIOSPISettings s) { hw.beginTransaction(s); }
-	virtual void endTransaction(void)   { hw.endTransaction(); }
-	virtual uint8_t transfer(uint8_t b) { return hw.transfer(b); }
-	virtual uint16_t transfer16(uint16_t b) { return hw.transfer16(b); }
-	//virtual void transfer(void *buf, size_t count) { hw.transfer(buf, count); }
-	//virtual void transfer(const void * buf, void * retbuf, uint32_t count) { hw.transfer(buf, retbuf, count);}
-  virtual uint8_t pinIsChipSelect(uint8_t pin) { return hw.pinIsChipSelect(pin); };
-  virtual uint8_t setCS(uint8_t pin) { return hw.setCS(pin); };
+    virtual void begin(void) { /* hw.begin(); */ helper.begin(); }
+    virtual void beginTransaction(FlexIOSPISettings s) { helper.beginTransaction(s); }
+    virtual void endTransaction(void)   { hw.endTransaction(); }
+    virtual uint8_t transfer(uint8_t b) { return hw.transfer(b); }
+    virtual uint16_t transfer16(uint16_t b) { return hw.transfer16(b); }
+    //virtual void transfer(void *buf, size_t count) { hw.transfer(buf, count); }
+    //virtual void transfer(const void * buf, void * retbuf, uint32_t count) { hw.transfer(buf, retbuf, count);}
+    
+    //virtual uint8_t pinIsChipSelect(uint8_t pin) { return helper.pinIsChipSelect(pin); };
+    //virtual uint8_t setCS(uint8_t pin) { return helper.setCS(pin); };
+    virtual void DCcmd(void) { helper.DCcmd(); };
+    virtual void DCdata(void) { helper.DCdata(); };
+    virtual void initDMA(void) { helper.initDMA(); }
+    virtual void deInitDMA(void) { helper.deInitDMA(); }
+    virtual void prepSPIforDMA(void) { helper.prepSPIforDMA(); };
+    virtual void fixupSPIafterDMA(void) { helper.fixupSPIafterDMA(); };
+
+    virtual void SPIsendDirect(uint16_t* pdata, uint32_t len) { helper.sendDirect16(pdata, len); }
+    virtual bool SPItransmitComplete(void) { return helper.SPItransmitComplete();}
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
+    virtual bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft) { return helper.prepDMAtransfer(image, pixels, tft); }
+    virtual void startDMAtransfer(void) { helper.startDMAtransfer(); }
+    virtual void finishDMAtransfer(void) { helper.finishDMAtransfer();}
+    virtual bool dmaBusy(void) { return helper.dmaBusy(); }
 };
 
+/*
 // template specialization for SPIClass: allow beginTransaction 
 // to use the less-opaque FlexIOSPISettings
 template<>
@@ -272,16 +407,26 @@ inline void TTFT_eSPI_Teensy4_SPIClass<SPIClass>::beginTransaction(FlexIOSPISett
 	SPISettings ss{s._clock,s._bitOrder,s._dataMode};
 	hw.beginTransaction(ss);
 }
+*/
 #define SPISettings FlexIOSPISettings // hack all subsequent occurrences!
 
-
-// Ngleton class to ensure clean access to one of the 
-// three SPI busses, even if multiple displays are in use
-class TFT_eSPI;
+////////////////////////////////////////////////////////////////////////////////////////
+//                                                        
+//     8888b.   .d8888b .d8888b .d88b.  .d8888b  .d8888b  
+//        "88b d88P"   d88P"   d8P  Y8b 88K      88K      
+//    .d888888 888     888     88888888 "Y8888b. "Y8888b. 
+//    888  888 Y88b.   Y88b.   Y8b.          X88      X88 
+//    "Y888888  "Y8888P "Y8888P "Y8888   88888P'  88888P' 
+//                                                        
+////////////////////////////////////////////////////////////////////////////////////////
+/*
+ * There is one instance of this class per TFT display in use. It may be
+ * that they reference different or identical instances of the 
+ * TFT_eSPI_Teensy4_SPIClass, depending on whether there are multiple
+ * displays on one bus, or on different busses, or a mix thereof.
+ */
 class TFT_eSPI_Teensy4_SPI_with_DMA
 {
-    const int LOOP_MINOR_PIXELS = 8; // number of pixels to transfer per minor loop
-
     static void SPI_DMA_ISR(void);
     static void SPI1_DMA_ISR(void);
     static void SPI2_DMA_ISR(void);
@@ -294,74 +439,94 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     uint32_t _dcpinmask;
     volatile uint32_t *_dcport;
     bool cleanupIsNeeded; // cleanup not done after transfer
-    bool DMAidle;
 
     TFT_eSPI* currentDMAtft;
-    TFT_eSPI_Teensy4_SPIClass* pSPI;
-    DMAChannel* pDMA;
-    IMXRT_LPSPI_t*  hardware; // actual peripheral
-    const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
-    DMASetting chain; // settings to chain to for last few pixels
+    TFT_eSPI_Teensy4_SPIClass* pSPI; // pointer to one of our Ngleton instances
+    //DMAChannel* pDMA;
+    //IMXRT_LPSPI_t*  hardware; // actual peripheral
+    //const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
+    //DMASetting chain; // settings to chain to for last few pixels
     
-    TFT_eSPI_Teensy4_SPI_with_DMA(FlexIOSPI& spi, const SPIClass::SPI_Hardware_t& dummy); 
   public:
-    TFT_eSPI_Teensy4_SPI_with_DMA(SPIClass& spi, uint32_t phw, const SPIClass::SPI_Hardware_t& attr); 
-    TFT_eSPI_Teensy4_SPI_with_DMA(FlexIOSPI& spi) 
-      : TFT_eSPI_Teensy4_SPI_with_DMA(spi, SPIClass::spiclass_lpspi4_hardware)
-      {}
-    void begin();
+    TFT_eSPI_Teensy4_SPI_with_DMA(TFT_eSPI_Teensy4_SPIClass& spi);
+    void begin(void);
 
-    TFT_eSPI_Teensy4_SPIClass&   getSPI(void) { return *pSPI; }      
-    DMAChannel& getDMA(void) { return *pDMA; }
-    IMXRT_LPSPI_t& getHardware(void) { return *hardware; }
+    TFT_eSPI_Teensy4_SPIClass&   getSPI(void) { return *pSPI; }  
+    static void attachInterrupt(SPIClass* pSPI, DMAChannel* pDMA);
+    //DMAChannel& getDMA(void) { return *pDMA; }
+    // IMXRT_LPSPI_t& getHardware(void) { return *hardware; }
 
-    void maybeUpdateTCR(uint32_t requested_tcr_state);
-    void prepSPIforDMA(void);
-    void SPIsendDirect(uint16_t* pdata, uint32_t len);
-    bool SPItransmitComplete(void);
-    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
-    void fixupSPIafterDMA(void);
-    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft);
-    void startDMAtransfer(void);
-    void finishDMAtransfer(void);
-    bool cleanupNeeded(void) { return cleanupIsNeeded; }
-    void DCcmd(void);
-    void DCdata(void);
+    // pass through to SPI-like object
+    void prepSPIforDMA(void)       { pSPI->prepSPIforDMA(); cleanupIsNeeded = true; }
+    void SPIsendDirect(uint16_t* pdata, uint32_t len) { pSPI->SPIsendDirect(pdata, len); }
+    bool SPItransmitComplete(void) { return pSPI->SPItransmitComplete();}
+    void fixupSPIafterDMA(void)    { pSPI->fixupSPIafterDMA(); cleanupIsNeeded = false; }
+    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft) { return pSPI->prepDMAtransfer(image, pixels, tft); }
+    void startDMAtransfer(void)    { pSPI->startDMAtransfer(); }
+    void finishDMAtransfer(void)   { pSPI->finishDMAtransfer();}
+    void DCcmd(void)               { pSPI->DCcmd(); }
+    void DCdata(void)              { pSPI->DCdata(); };
     
+    // internal use
+    void waitTransmitComplete(void) { while (!SPItransmitComplete()) {} }
+    bool cleanupNeeded(void) { return cleanupIsNeeded; }
+
+    // API functions
     void initDMA(void);
-    void deInitDMA(void) { delete pDMA; pDMA = nullptr; }
-    bool dmaBusy(void);
+    void deInitDMA(void) { pSPI->deInitDMA(); }
+    bool dmaBusy(void) { return pSPI->dmaBusy(); }
     void dmaWait(void);
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+//                                 
+//    888b    888          888          888                     
+//    8888b   888          888          888                     
+//    88888b  888          888          888                     
+//    888Y88b 888  .d88b.  888  .d88b.  888888 .d88b.  88888b.  
+//    888 Y88b888 d88P"88b 888 d8P  Y8b 888   d88""88b 888 "88b 
+//    888  Y88888 888  888 888 88888888 888   888  888 888  888 
+//    888   Y8888 Y88b 888 888 Y8b.     Y88b. Y88..88P 888  888 
+//    888    Y888  "Y88888 888  "Y8888   "Y888 "Y88P"  888  888 
+//                     888                                      
+//                Y8b d88P                                      
+//                 "Y88P"                                       
+//
+// Ngleton class to ensure clean access to one of the 
+// three SPI busses, even if multiple displays are in use
 class TFT_eSPI_Teensy4_SPD_Factory
 {
     TFT_eSPI_Teensy4_SPD_Factory() {} // hide constructor
 
     // we implement 3 SPI buses for now
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI(SPIClass& s)
+    static TFT_eSPI_Teensy4_SPIClass& getSPI(SPIClass& s)
     {
-      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI4_ADDRESS, 
-                  SPIClass::spiclass_lpspi4_hardware};
+      static TFT_eSPI_Teensy4_SPI_Helper helper
+                {s, IMXRT_LPSPI4_ADDRESS, SPIClass::spiclass_lpspi4_hardware};
+      static TTFT_eSPI_Teensy4_SPIClass<SPIClass, TFT_eSPI_Teensy4_SPI_Helper>
+              spi{s, helper}; 
       return spi;
     }
 
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI1(SPIClass& s)
+    static TFT_eSPI_Teensy4_SPIClass& getSPI1(SPIClass& s)
     {
-      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI3_ADDRESS, 
-                  SPIClass::spiclass_lpspi3_hardware};
+      static TFT_eSPI_Teensy4_SPI_Helper helper
+                {s, IMXRT_LPSPI3_ADDRESS, SPIClass::spiclass_lpspi3_hardware};
+      static TTFT_eSPI_Teensy4_SPIClass<SPIClass, TFT_eSPI_Teensy4_SPI_Helper>
+                spi{s, helper}; 
       return spi;
     }
 
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getSPI2(SPIClass& s)
+    static TFT_eSPI_Teensy4_SPIClass& getSPI2(SPIClass& s)
     {
-      static TFT_eSPI_Teensy4_SPI_with_DMA spi{s, IMXRT_LPSPI1_ADDRESS, 
-                  SPIClass::spiclass_lpspi1_hardware};
+      static TFT_eSPI_Teensy4_SPI_Helper helper
+                {s, IMXRT_LPSPI1_ADDRESS, SPIClass::spiclass_lpspi1_hardware};
+      static TTFT_eSPI_Teensy4_SPIClass<SPIClass, TFT_eSPI_Teensy4_SPI_Helper>
+                spi{s, helper}; 
       return spi;
     }
 
-  public:
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(void* s)
+    static TFT_eSPI_Teensy4_SPIClass& getInstanceFromSPIClass(void* s)
     {
       if (s == &SPI1)
           return getSPI1(*((SPIClass*) s));
@@ -372,16 +537,60 @@ class TFT_eSPI_Teensy4_SPD_Factory
       return getSPI(*((SPIClass*) s)); // must return something!     
     }
 
+ // we may also be implementing one or more FlexIOSPI busses:
+ #if defined(TFT_FLEXIOSPI_COUNT)
+    static constexpr uint8_t FlexCSpins[TFT_FLEXIOSPI_COUNT]{TFT_FLEXIOSPI_CS_LIST};
+    static constexpr uint8_t FlexDCpins[TFT_FLEXIOSPI_COUNT]{TFT_FLEXIOSPI_DC_LIST};
+    static FlexIOSPI* FlexBusses[TFT_FLEXIOSPI_COUNT];
+    static TFT_eSPI_Teensy4_FlexIOSPI_Helper* FlexHelpers[TFT_FLEXIOSPI_COUNT];
+    static TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>* 
+      FlexInstances[TFT_FLEXIOSPI_COUNT];
+
+    static TFT_eSPI_Teensy4_SPIClass& getInstanceFromFlexIOSPI(void* fs)
+    {
+      FlexIOSPI* s = (FlexIOSPI*) fs;
+
+      TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>* result = nullptr;
+
+      for (int i=0;i<TFT_FLEXIOSPI_COUNT && nullptr == result;i++)
+      {
+        if (s == FlexBusses[i]) // seen it before
+          result = FlexInstances[i];
+
+        if (nullptr == FlexBusses[i]) // never seen this before, create a new one 
+        {
+          FlexBusses[i] = s;
+          FlexHelpers[i] = new TFT_eSPI_Teensy4_FlexIOSPI_Helper{*s};
+          FlexInstances[i] = new TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>
+                                {*s, *FlexHelpers[i]};
+          result = FlexInstances[i];                                
+        }
+      }
+      return *result;
+    }
+
+#endif // defined(TFT_FLEXIOSPI_COUNT)    
+
+
+  public:
+    /*
     static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(TFT_eSPI_Teensy4_SPIClass& spi)
     {
       return getInstance(spi.getHWaddr());
     }
-
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(SPIClass& spi)
+    */
+    static TFT_eSPI_Teensy4_SPIClass& getInstance(SPIClass& spi)
     {
-      return getInstance(&spi);
+      return getInstanceFromSPIClass(&spi);
     }
 
+#if defined(TFT_FLEXIOSPI_COUNT)
+     static TFT_eSPI_Teensy4_SPIClass& getInstance(FlexIOSPI& spi)
+    {
+      return getInstanceFromFlexIOSPI(&spi);
+    }
+#endif // defined(TFT_FLEXIOSPI_COUNT)
+ 
 
     // publicly disable copy and assignment
     TFT_eSPI_Teensy4_SPD_Factory(TFT_eSPI_Teensy4_SPD_Factory const&) = delete;

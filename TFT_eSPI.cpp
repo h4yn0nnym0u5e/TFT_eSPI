@@ -442,7 +442,9 @@ TFT_eSPI::TFT_eSPI(int16_t w, int16_t h
 #if defined(TFT_ESPI_MULTI_SPI)     
                   , TFT_eSPI_Teensy4_SPIClass& _spi, int _cs,
                   void (*_CSfn)(bool))
-  : spi(_spi), spi_dma(factory.getInstance(_spi)), CS_from_constructor(_cs), CSfn(_CSfn)
+  : spi(_spi), 
+    spi_dma(* new TFT_eSPI_Teensy4_SPI_with_DMA(spi)), 
+    CS_from_constructor(_cs), CSfn(_CSfn)
 #else
     )  
 #endif // defined(TFT_ESPI_MULTI_SPI)     

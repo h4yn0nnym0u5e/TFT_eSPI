@@ -264,7 +264,7 @@ TFT_eSPI_Teensy4_SPI_with_DMA::TFT_eSPI_Teensy4_SPI_with_DMA(TFT_eSPI_Teensy4_SP
       : cleanupIsNeeded{false}, 
         currentDMAtft{nullptr},
         pSPI(&spi)
-        {}
+        { /* Serial.println("new TFT_eSPI_Teensy4_SPI_with_DMA"); */ }
 
 void TFT_eSPI_Teensy4_SPI_with_DMA::begin(void)
 {
@@ -600,7 +600,7 @@ void TFT_eSPI::dmaWait(void)
 void TFT_eSPI::pushPixelsDMA(uint16_t* image, // pointer to image data
                              uint32_t len)    // length of image data in pixels
 {
-  if (len > 0)
+  if (len > 0 && nullptr != image)
   {
     dmaWait(); // should take no time as long as previous DMA is finished
 
@@ -617,17 +617,20 @@ void TFT_eSPI::pushPixelsDMA(uint16_t* image, // pointer to image data
 void TFT_eSPI::pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, 
                             uint16_t* image, uint16_t* buffer)
 {
-  int pixels=w*h;
+  if (nullptr != image)
+  {
+    int pixels=w*h;
 
-  // just straight image for now - existing code
-  // deals with clipping and swapped bytes, but
-  // appears to be buggy...
-  if (nullptr == buffer)
-    buffer = image;
-  else
-    memcpy(buffer, image, pixels * sizeof *buffer);
-  //setAddrWindow(x,y,w,h);
-  setWindow(x, y, x + w - 1, y + h - 1);
-  pushPixelsDMA((uint16_t*) buffer,pixels);
+    // just straight image for now - existing code
+    // deals with clipping and swapped bytes, but
+    // appears to be buggy...
+    if (nullptr == buffer)
+      buffer = image;
+    else
+      memcpy(buffer, image, pixels * sizeof *buffer);
+    //setAddrWindow(x,y,w,h);
+    setWindow(x, y, x + w - 1, y + h - 1);
+    pushPixelsDMA((uint16_t*) buffer,pixels);
+  }
 }
 

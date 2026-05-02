@@ -283,7 +283,8 @@ class TFT_eSPI_Teensy4_SPI_Helper
     void maybeUpdateTCR(uint32_t requested_tcr_state);
   public:
     TFT_eSPI_Teensy4_SPI_Helper(SPIClass& _spi, uint32_t _phw, const SPIClass::SPI_Hardware_t& _attr)
-         : spi{_spi}, hardware{(IMXRT_LPSPI_t*) _phw}, SPIattr{_attr}
+         : spi{_spi}, hardware{(IMXRT_LPSPI_t*) _phw}, SPIattr{_attr},
+           pDMA{nullptr}, currentDMAtft{nullptr}, DMAidle{true}
            {}
 
     //uint8_t pinIsChipSelect(uint8_t pin) { return spi.pinIsChipSelect(pin); };
@@ -449,6 +450,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     
   public:
     TFT_eSPI_Teensy4_SPI_with_DMA(TFT_eSPI_Teensy4_SPIClass& spi);
+    ~TFT_eSPI_Teensy4_SPI_with_DMA() { /* Serial.println("destroy TFT_eSPI_Teensy4_SPI_with_DMA"); */ }
     void begin(void);
 
     TFT_eSPI_Teensy4_SPIClass&   getSPI(void) { return *pSPI; }  
@@ -472,7 +474,7 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     bool cleanupNeeded(void) { return cleanupIsNeeded; }
 
     // API functions
-    void initDMA(void);
+    void initDMA(void) { pSPI->initDMA(); }
     void deInitDMA(void) { pSPI->deInitDMA(); }
     bool dmaBusy(void) { return pSPI->dmaBusy(); }
     void dmaWait(void);

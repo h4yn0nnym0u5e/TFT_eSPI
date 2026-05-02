@@ -480,6 +480,7 @@ class TFT_eSPI : public Print
                        factory.getInstance(_spi),
                        _cs, _CSfn) 
             {}
+  ~TFT_eSPI() { delete &spi_dma; }            
 #else
   TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
 #endif // defined(TFT_ESPI_MULTI_SPI)     

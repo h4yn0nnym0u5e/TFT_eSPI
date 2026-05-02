@@ -360,7 +360,7 @@ class TTFT_eSPI_Teensy4_SPIClass : public TFT_eSPI_Teensy4_SPIClass
     virtual void DMA_ISR(void) { helper.DMA_ISR(); }
     virtual void* getHWaddr(void) { return (void*) &hw; };
 
-    virtual void begin(void) { /* hw.begin(); */ helper.begin(); }
+    virtual void begin(void) { hw.begin(); helper.begin(); }
     virtual void beginTransaction(FlexIOSPISettings s) { helper.beginTransaction(s); }
     virtual void endTransaction(void)   { hw.endTransaction(); }
     virtual uint8_t transfer(uint8_t b) { return hw.transfer(b); }

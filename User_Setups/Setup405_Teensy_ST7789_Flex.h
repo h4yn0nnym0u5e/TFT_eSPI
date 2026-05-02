@@ -9,8 +9,8 @@
 //   Note that some sketches are designed for a particular TFT pixel width/height
 
 // User defined information reported by "Read_User_Setup" test & diagnostics example
-#define USER_SETUP_INFO "Setup401_Teensy_ST7789"
-#define USER_SETUP_ID   401
+#define USER_SETUP_INFO "Setup405_Teensy_ST7789_Flex"
+#define USER_SETUP_ID   405
 
 // Define to disable all #warnings in library (can be put in User_Setup_Select.h)
 //#define DISABLE_ALL_LIBRARY_WARNINGS

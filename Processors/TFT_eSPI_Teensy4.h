@@ -312,11 +312,25 @@ class TFT_eSPI_Teensy4_SPI_Helper
     bool dmaBusy(void);
 };
 
+// At the time of writing, this needs a specific branch of the FlexIO_t4 library,
+// from https://github.com/h4yn0nnym0u5e/FlexIO_t4/tree/feature/wide-DMA
 class TFT_eSPI_Teensy4_FlexIOSPI_Helper
 {
+    // set up on construction
     FlexIOSPI& spi;
+    EventResponder& evrr;
+    uint8_t DCpin;
+
+    // variables
+    uint16_t* image;
+    int pixels;
+    TFT_eSPI* currentDMAtft;
+    bool dmaIsBusy;
   public:
-    TFT_eSPI_Teensy4_FlexIOSPI_Helper(FlexIOSPI& _spi) : spi{_spi} {}
+    TFT_eSPI_Teensy4_FlexIOSPI_Helper(FlexIOSPI& _spi, EventResponderRef _evrr, uint8_t _DCpin) 
+      : spi{_spi}, evrr{_evrr}, DCpin{_DCpin},
+        dmaIsBusy{false}
+        {}
 
     //uint8_t pinIsChipSelect(uint8_t pin) { return 0; };
     //uint8_t setCS(uint8_t pin) { return 0; };
@@ -325,21 +339,33 @@ class TFT_eSPI_Teensy4_FlexIOSPI_Helper
       spi.beginTransaction(s);
     }
 
-    void begin(void){}
+    void begin(void);
     bool SPItransmitComplete(void){ return true; }
     void waitTransmitComplete(void) { while (!SPItransmitComplete()) ; }
-    void DCcmd(void){}
-    void DCdata(void){}
-    void initDMA(void){}
-    void deInitDMA(void){}
-    void prepSPIforDMA(void){}
-    void sendDirect16(uint16_t* pdata, uint32_t len){}
-    void fixupSPIafterDMA(void){}
+    void DCcmd(void);
+    void DCdata(void);
+    void initDMA(void){}        // nop, done directly in library
+    void deInitDMA(void){}      // not available
+    void prepSPIforDMA(void) {} // not needed
+    void sendDirect16(uint16_t* pdata, uint32_t len){} // not needed
+    void fixupSPIafterDMA(void){} // not needed
     void DMA_ISR(void){}
-    bool prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft){ return true; }
-    void startDMAtransfer(void){}
-    void finishDMAtransfer(void){}
-    bool dmaBusy(void){ return false; }
+    bool prepDMAtransfer(uint16_t* _image, int _pixels, TFT_eSPI& _tft)
+    { 
+      image = _image;
+      pixels = _pixels;
+      currentDMAtft = &_tft;
+
+      return true; // always enough pixels, FlexIOSPI deals with this directly
+    }
+    void startDMAtransfer(void)
+    { 
+      dmaIsBusy = true; // do first, may trigger event immediately!
+      spi.transfer(image, nullptr, pixels*sizeof(uint16_t), evrr);
+    }
+    void finishDMAtransfer(void){} // not needed
+    bool dmaBusy(void){ return dmaIsBusy; }
+    void clearDMAbusy(void) { dmaIsBusy = false; }
 };
 
 /*
@@ -544,6 +570,7 @@ class TFT_eSPI_Teensy4_SPD_Factory
     static constexpr uint8_t FlexCSpins[TFT_FLEXIOSPI_COUNT]{TFT_FLEXIOSPI_CS_LIST};
     static constexpr uint8_t FlexDCpins[TFT_FLEXIOSPI_COUNT]{TFT_FLEXIOSPI_DC_LIST};
     static FlexIOSPI* FlexBusses[TFT_FLEXIOSPI_COUNT];
+    static EventResponder FlexEventResponders[TFT_FLEXIOSPI_COUNT];
     static TFT_eSPI_Teensy4_FlexIOSPI_Helper* FlexHelpers[TFT_FLEXIOSPI_COUNT];
     static TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>* 
       FlexInstances[TFT_FLEXIOSPI_COUNT];
@@ -562,7 +589,7 @@ class TFT_eSPI_Teensy4_SPD_Factory
         if (nullptr == FlexBusses[i]) // never seen this before, create a new one 
         {
           FlexBusses[i] = s;
-          FlexHelpers[i] = new TFT_eSPI_Teensy4_FlexIOSPI_Helper{*s};
+          FlexHelpers[i] = new TFT_eSPI_Teensy4_FlexIOSPI_Helper{*s, FlexEventResponders[i], FlexDCpins[i]};
           FlexInstances[i] = new TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>
                                 {*s, *FlexHelpers[i]};
           result = FlexInstances[i];                                
@@ -587,7 +614,7 @@ class TFT_eSPI_Teensy4_SPD_Factory
     }
 
 #if defined(TFT_FLEXIOSPI_COUNT)
-     static TFT_eSPI_Teensy4_SPIClass& getInstance(FlexIOSPI& spi)
+    static TFT_eSPI_Teensy4_SPIClass& getInstance(FlexIOSPI& spi)
     {
       return getInstanceFromFlexIOSPI(&spi);
     }

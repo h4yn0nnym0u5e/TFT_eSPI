@@ -308,6 +308,35 @@ void TFT_eSPI_Teensy4_SPI_Helper::begin(void)
   DCdata();
 }
 
+// one responder function will do for all FlexIOSPI instances
+static void FlexIOSPI_EventResponse(EventResponderRef ev)
+{
+  TFT_eSPI_Teensy4_FlexIOSPI_Helper* pHelper = (TFT_eSPI_Teensy4_FlexIOSPI_Helper*) ev.getData();
+
+  pHelper->clearDMAbusy();
+}
+
+void TFT_eSPI_Teensy4_FlexIOSPI_Helper::begin(void)        
+{
+  if (DCpin <= CORE_NUM_TOTAL_PINS)
+  {
+    pinMode(DCpin, OUTPUT);
+    DCdata();
+  }
+  // spi.begin(); // already called
+  evrr.attach(FlexIOSPI_EventResponse); // what to call when DMA is complete
+  spi.setEventData(this);               // tell responder function which TFT it was
+}
+
+void TFT_eSPI_Teensy4_FlexIOSPI_Helper::DCcmd(void)
+{
+  digitalWrite(DCpin, LOW);
+}
+
+void TFT_eSPI_Teensy4_FlexIOSPI_Helper::DCdata(void)
+{
+  digitalWrite(DCpin, HIGH);
+}
 
 // Return `true` if Tx FIFO is empty and hardware is not busy
 bool TFT_eSPI_Teensy4_SPI_Helper::SPItransmitComplete(void) 
@@ -488,6 +517,8 @@ void TFT_eSPI_Teensy4_SPI_with_DMA::SPI2_DMA_ISR(void)
  * Prepare the DMA channel for the transfer
  * Sets up source address, SPI transmit register, trigger and interrupts.
  * Also flushes the source cache to RAM
+ *
+ * \return true if there are enough pixels for DMA to be worthwhile
  */
 bool TFT_eSPI_Teensy4_SPI_Helper::prepDMAtransfer(uint16_t* image, int pixels, TFT_eSPI& tft)
 {
@@ -560,6 +591,7 @@ bool TFT_eSPI_Teensy4_SPI_Helper::dmaBusy(void)
 // FlexIOSPI stuff
 
 FlexIOSPI* TFT_eSPI_Teensy4_SPD_Factory::FlexBusses[TFT_FLEXIOSPI_COUNT]{nullptr};
+EventResponder TFT_eSPI_Teensy4_SPD_Factory::FlexEventResponders[TFT_FLEXIOSPI_COUNT];
 TFT_eSPI_Teensy4_FlexIOSPI_Helper* TFT_eSPI_Teensy4_SPD_Factory::FlexHelpers[TFT_FLEXIOSPI_COUNT]{nullptr};
 TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>* 
       TFT_eSPI_Teensy4_SPD_Factory::FlexInstances[TFT_FLEXIOSPI_COUNT]{nullptr};
@@ -579,6 +611,7 @@ void TFT_eSPI::deInitDMA(void) { DMA_Enabled=false; /* spi_dma.getDMA().release(
 // i.e. we're completely done with the hardware
 bool TFT_eSPI::dmaBusy(void) 
 { 
+  yield(); // may need to allow EventResponder to trigger
   return spi_dma.dmaBusy(); 
 }
 

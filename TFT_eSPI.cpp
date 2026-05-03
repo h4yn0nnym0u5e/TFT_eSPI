@@ -625,10 +625,13 @@ void TFT_eSPI::begin(uint8_t tc)
 void TFT_eSPI::init(uint8_t tc)
 {
   int phase = 0;
+//int lastPhase = -1;  
   while (phase != done)
   {
+//if (lastPhase != phase) {lastPhase = phase; Serial.printf(" %d ... ", phase); Serial.flush(); }
     phase = phasedInit(tc, phase);
   }
+//  Serial.println("done");
 }
 
 /***************************************************************************************
@@ -675,7 +678,7 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
       {
         initBus();
 
-    #if !defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
+     #if !defined (ESP32) && !defined(TFT_PARALLEL_8_BIT) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
       // Legacy bitmasks for GPIO
       #if defined (TFT_CS) && (TFT_CS >= 0)
         cspinmask = (uint32_t) digitalPinToBitMask(TFT_CS);
@@ -700,9 +703,9 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
         spi.pins(6, 7, 8, 0);
       #endif
 
-      spi.begin(); // This will set HMISO to input
+      spi.begin(); // This will set MISO to input
 
-    #else
+     #else
       #if !defined(TFT_PARALLEL_8_BIT) && !defined(RP2040_PIO_INTERFACE)
         #if defined (TFT_MOSI) && !defined (TFT_SPI_OVERLAP) && !defined(ARDUINO_ARCH_RP2040) && !defined (ARDUINO_ARCH_MBED)
           spi.begin(TFT_SCLK, TFT_MISO, TFT_MOSI, -1); // This will set MISO to input
@@ -710,7 +713,7 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
           spi.begin(); // This will set MISO to input
         #endif
       #endif
-    #endif
+     #endif
         lockTransaction = false;
         inTransaction = false;
         locked = true;
@@ -805,6 +808,7 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
 
         tc = tc; // Suppress warning
         phase = display_init;
+        break;
 
       case display_init:        
       // This loads the driver specific initialisation code  <<<<<<<<<<<<<<<<<<<<< ADD NEW DRIVERS TO THE LIST HERE <<<<<<<<<<<<<<<<<<<<<<<
@@ -873,6 +877,7 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
 
     #endif
         phase = display_final;
+        break;
 
       case display_final:      
     #ifdef TFT_INVERSION_ON

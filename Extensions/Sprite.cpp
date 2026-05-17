@@ -1052,7 +1052,7 @@ void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_
 
   if (_bpp == 16) // Plot a 16 bpp image into a 16 bpp Sprite
   {
-    if (-1 == transparent)
+    if (SPRITE_NO_TRANSPARENCY == transparent)
     {
       // Pointer within original image
       uint8_t *ptro = (uint8_t *)data + ((dx + dy * w) << 1);

@@ -587,6 +587,7 @@ bool TFT_eSPI_Teensy4_SPI_Helper::dmaBusy(void)
       || !SPItransmitComplete(); 
 }
 
+#if defined(TFT_FLEXIOSPI_COUNT)
 //==================================================================================
 // FlexIOSPI stuff
 
@@ -595,6 +596,7 @@ EventResponder TFT_eSPI_Teensy4_SPD_Factory::FlexEventResponders[TFT_FLEXIOSPI_C
 TFT_eSPI_Teensy4_FlexIOSPI_Helper* TFT_eSPI_Teensy4_SPD_Factory::FlexHelpers[TFT_FLEXIOSPI_COUNT]{nullptr};
 TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI, TFT_eSPI_Teensy4_FlexIOSPI_Helper>* 
       TFT_eSPI_Teensy4_SPD_Factory::FlexInstances[TFT_FLEXIOSPI_COUNT]{nullptr};
+#endif // defined(TFT_FLEXIOSPI_COUNT)
 
 //==================================================================================
 // Minimal function set to support DMA:

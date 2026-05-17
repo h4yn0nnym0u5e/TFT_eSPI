@@ -473,6 +473,7 @@ class TFT_eSPI : public Print
                        _cs, _CSfn) 
             {}
 
+#if defined(TFT_FLEXIOSPI_COUNT)
   TFT_eSPI(int16_t _W, int16_t _H
            , FlexIOSPI& _spi, int _cs = -1
            , void (*_CSfn)(bool negate) = nullptr          
@@ -481,6 +482,7 @@ class TFT_eSPI : public Print
                        _cs, _CSfn) 
             {}
   ~TFT_eSPI() { delete &spi_dma; }            
+#endif // defined(TFT_FLEXIOSPI_COUNT)
 #else
   TFT_eSPI(int16_t _W = TFT_WIDTH, int16_t _H = TFT_HEIGHT);
 #endif // defined(TFT_ESPI_MULTI_SPI)     

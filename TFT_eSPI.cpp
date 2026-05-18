@@ -650,6 +650,10 @@ void TFT_eSPI::init(uint8_t tc)
 ** supporting phased init should be written as part of a switch ... case block.
 ** Each case must execute any transfers, but when it needs a delay(),
 ** instead call beginPhaseWait(<delay value>), increment phase, and break;
+**
+** If a new phase is wanted, but no delay, a zero delay value MUST be supplied
+** in order to release the SPI bus for other display accesses / initialisation
+** to take place.
 ** 
 ** The next case must start with if (phaseKeepWaiting()) break; to implement
 ** the display-mandated delay; when phaseKeepWaiting() returns false, the 
@@ -803,14 +807,16 @@ int TFT_eSPI::phasedInit(uint8_t tc, int phase)
     #endif // TFT_RST
 
       case reset_wait:
-        if (phaseKeepWaiting())
+        if (phaseKeepWaiting(false)) // don't begin a TFT write when reset is done
           break;
 
         tc = tc; // Suppress warning
         phase = display_init;
         break;
 
-      case display_init:        
+      case display_init:
+        begin_nin_write(); // assume we're about to write to TFT - seems reasonable!
+
       // This loads the driver specific initialisation code  <<<<<<<<<<<<<<<<<<<<< ADD NEW DRIVERS TO THE LIST HERE <<<<<<<<<<<<<<<<<<<<<<<
       // If the driver exits to allow other phased initialisations to run, then it must call end_tft_write() before
       // it does so, and begin_tft_write() when it resumes operation. Its last action should leave the bus claimed.

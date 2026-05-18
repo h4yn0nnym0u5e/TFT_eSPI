@@ -123,7 +123,7 @@
 
 #define TFT_CS   CS_from_constructor
 //#define TFT_CS   31  // Chip select control
-#define TFT_RST 14     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
+#define TFT_RST -1     // Set TFT_RST to -1 if the display RESET is connected to NodeMCU RST or 3.3V
 
 
 #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen

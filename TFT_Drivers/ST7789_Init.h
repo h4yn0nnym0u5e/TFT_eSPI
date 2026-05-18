@@ -38,6 +38,7 @@
 
     // delay(10);
     // beginPhaseWait(10); // no documented need for this
+    beginPhaseWait(0); // dummy wait to end the write sequence for now
     phase++;
     break;
 
@@ -132,6 +133,7 @@
     //end_tft_write();
     //delay(120);
     //beginPhaseWait(120); // no documented need for this
+    beginPhaseWait(0); // dummy wait to end the write sequence for now
     phase++;
     break;
 
@@ -143,6 +145,7 @@
 
     // delay(120);
     //beginPhaseWait(120); // no documented need for this
+    beginPhaseWait(0); // dummy wait to end the write sequence for now
     phase++;
     break;
 

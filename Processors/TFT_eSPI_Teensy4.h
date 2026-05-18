@@ -287,8 +287,6 @@ class TFT_eSPI_Teensy4_SPI_Helper
            pDMA{nullptr}, currentDMAtft{nullptr}, DMAidle{true}
            {}
 
-    //uint8_t pinIsChipSelect(uint8_t pin) { return spi.pinIsChipSelect(pin); };
-    //uint8_t setCS(uint8_t pin) { return spi.setCS(pin); };
     void beginTransaction(FlexIOSPISettings s)
     {
       SPISettings ss{s._clock,s._bitOrder,s._dataMode};
@@ -332,8 +330,6 @@ class TFT_eSPI_Teensy4_FlexIOSPI_Helper
         dmaIsBusy{false}
         {}
 
-    //uint8_t pinIsChipSelect(uint8_t pin) { return 0; };
-    //uint8_t setCS(uint8_t pin) { return 0; };
     void beginTransaction(FlexIOSPISettings s)
     {
       spi.beginTransaction(s);
@@ -413,28 +409,7 @@ class TTFT_eSPI_Teensy4_SPIClass : public TFT_eSPI_Teensy4_SPIClass
     virtual bool dmaBusy(void) { return helper.dmaBusy(); }
 };
 
-/*
-// template specialization for SPIClass: allow beginTransaction 
-// to use the less-opaque FlexIOSPISettings
-template<>
-inline uint8_t TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI>::pinIsChipSelect(uint8_t pin)
-{
-  return 0;
-}
 
-template<>
-inline uint8_t TTFT_eSPI_Teensy4_SPIClass<FlexIOSPI>::setCS(uint8_t pin)
-{
-  return 0;
-}
-
-template<>
-inline void TTFT_eSPI_Teensy4_SPIClass<SPIClass>::beginTransaction(FlexIOSPISettings s)
-{
-	SPISettings ss{s._clock,s._bitOrder,s._dataMode};
-	hw.beginTransaction(ss);
-}
-*/
 #define SPISettings FlexIOSPISettings // hack all subsequent occurrences!
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -469,10 +444,6 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
 
     TFT_eSPI* currentDMAtft;
     TFT_eSPI_Teensy4_SPIClass* pSPI; // pointer to one of our Ngleton instances
-    //DMAChannel* pDMA;
-    //IMXRT_LPSPI_t*  hardware; // actual peripheral
-    //const SPIClass::SPI_Hardware_t& SPIattr;  // attributes of that peripheral
-    //DMASetting chain; // settings to chain to for last few pixels
     
   public:
     TFT_eSPI_Teensy4_SPI_with_DMA(TFT_eSPI_Teensy4_SPIClass& spi);
@@ -481,8 +452,6 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
 
     TFT_eSPI_Teensy4_SPIClass&   getSPI(void) { return *pSPI; }  
     static void attachInterrupt(SPIClass* pSPI, DMAChannel* pDMA);
-    //DMAChannel& getDMA(void) { return *pDMA; }
-    // IMXRT_LPSPI_t& getHardware(void) { return *hardware; }
 
     // pass through to SPI-like object
     void prepSPIforDMA(void)       { pSPI->prepSPIforDMA(); cleanupIsNeeded = true; }
@@ -600,14 +569,7 @@ class TFT_eSPI_Teensy4_SPD_Factory
 
 #endif // defined(TFT_FLEXIOSPI_COUNT)    
 
-
   public:
-    /*
-    static TFT_eSPI_Teensy4_SPI_with_DMA& getInstance(TFT_eSPI_Teensy4_SPIClass& spi)
-    {
-      return getInstance(spi.getHWaddr());
-    }
-    */
     static TFT_eSPI_Teensy4_SPIClass& getInstance(SPIClass& spi)
     {
       return getInstanceFromSPIClass(&spi);
@@ -620,7 +582,6 @@ class TFT_eSPI_Teensy4_SPD_Factory
     }
 #endif // defined(TFT_FLEXIOSPI_COUNT)
  
-
     // publicly disable copy and assignment
     TFT_eSPI_Teensy4_SPD_Factory(TFT_eSPI_Teensy4_SPD_Factory const&) = delete;
     void operator=(TFT_eSPI_Teensy4_SPD_Factory const&)               = delete;

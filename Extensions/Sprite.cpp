@@ -38,6 +38,7 @@ TFT_eSprite::TFT_eSprite(TFT_eSPI *tft)
   _colorMap = nullptr;
 
   _psram_enable = true;
+  _preferPSRAM = false;
   
   // Ensure end_tft_write() does nothing in inherited functions.
   lockTransaction = true;
@@ -395,7 +396,11 @@ void TFT_eSprite::deleteSprite(void)
 
   if (_created)
   {
+#if defined(ARDUINO_TEENSY41)
+    extmem_free(_img8_1); // falls back to normal free() if image isn't in PSRAM
+#else
     free(_img8_1);
+#endif // defined(ARDUINO_TEENSY41)
     _img8 = nullptr;
     _created = false;
     _vpOoB   = true;  // TFT_eSPI class write() uses this to check for valid sprite

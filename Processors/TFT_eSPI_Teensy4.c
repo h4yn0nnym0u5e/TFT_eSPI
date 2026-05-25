@@ -400,7 +400,7 @@ void TFT_eSPI_Teensy4_SPI_Helper::initDMA(void)
   {
     SPIClass* pSPI = &spi;
 
-    pDMA->begin();
+    pDMA->begin(false, true); // can pre-empt if needed
     TFT_eSPI_Teensy4_SPI_with_DMA::attachInterrupt(pSPI, pDMA);
   }
 }
@@ -537,11 +537,11 @@ bool TFT_eSPI_Teensy4_SPI_Helper::prepDMAtransfer(uint16_t* image, int pixels, T
 
   // Fix up the remaining pixels
   mainTransfer *= LOOP_MINOR_PIXELS; // pixels transferred by first TCD
-  pixels = pixels - mainTransfer; // how remaining pixels we have
-  if (pixels > 0) // if some left, will be 1 - LOOP_MINOR_PIXELS-1
+  int pixelsLeft = pixels - mainTransfer; // how remaining pixels we have
+  if (pixelsLeft > 0) // if some left, will be 1 - LOOP_MINOR_PIXELS-1
   {
     chain = *pDMA; // copy main transfer settings
-    chain.sourceBuffer(image + mainTransfer, pixels * sizeof *image); // last few pixels
+    chain.sourceBuffer(image + mainTransfer, pixelsLeft * sizeof *image); // last few pixels
     pDMA->replaceSettingsOnCompletion(chain);
     pDMA->TCD->CSR &= ~DMA_TCD_CSR_DREQ;  // don't disable on completion of first transfer
     chain.interruptAtCompletion();        // interrupt after odd size mop-up transfer

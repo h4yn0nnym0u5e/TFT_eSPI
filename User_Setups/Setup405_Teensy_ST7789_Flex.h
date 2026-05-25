@@ -100,8 +100,8 @@
 // driven with a PWM signal or turned OFF/ON then this must be handled by the user
 // sketch. e.g. with digitalWrite(TFT_BL, LOW);
 
-#define TFT_BL    9            // LED back-light control pin
-#define TFT_BACKLIGHT_ON HIGH  // Level to turn ON back-light (HIGH or LOW)
+//#define TFT_BL    9            // LED back-light control pin
+//#define TFT_BACKLIGHT_ON HIGH  // Level to turn ON back-light (HIGH or LOW)
 
 // ###### EDIT THE PIN NUMBERS IN THE LINES FOLLOWING TO SUIT YOUR TEENSY SETUP ######
 

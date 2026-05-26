@@ -395,12 +395,12 @@ void TFT_eSPI_Teensy4_SPI_Helper::DCdata(void)
 void TFT_eSPI_Teensy4_SPI_Helper::initDMA(void) 
 { 
   if (nullptr == pDMA)
-    pDMA = new DMAChannel;
+    pDMA = new DMAChannel{false}; // create but don't allocate
   if (nullptr != pDMA)
   {
     SPIClass* pSPI = &spi;
 
-    pDMA->begin(false, true); // can pre-empt if needed
+    pDMA->begin(false, true); // now allocate - can pre-empt if needed
     TFT_eSPI_Teensy4_SPI_with_DMA::attachInterrupt(pSPI, pDMA);
   }
 }

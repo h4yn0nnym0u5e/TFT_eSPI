@@ -357,7 +357,8 @@ class TFT_eSPI_Teensy4_FlexIOSPI_Helper
     void startDMAtransfer(void)
     { 
       dmaIsBusy = true; // do first, may trigger event immediately!
-      spi.transfer(image, nullptr, pixels*sizeof(uint16_t), evrr);
+      //spi.transfer(image, nullptr, pixels*sizeof(uint16_t), evrr);
+      spi.transfer16(image, nullptr, pixels, evrr);
     }
     void finishDMAtransfer(void){} // not needed
     bool dmaBusy(void){ return dmaIsBusy; }

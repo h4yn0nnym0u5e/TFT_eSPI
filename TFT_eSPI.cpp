@@ -4825,6 +4825,10 @@ void TFT_eSPI::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h, uin
 {
   if (_vpOoB) return;
 
+  float delta = -255.0/h;
+  float alpha = 255.0;
+  uint32_t color = color1;
+
   x+= _xDatum;
   y+= _yDatum;
 
@@ -4832,7 +4836,13 @@ void TFT_eSPI::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h, uin
   if ((x >= _vpW) || (y >= _vpH)) return;
 
   if (x < _vpX) { w += x - _vpX; x = _vpX; }
-  if (y < _vpY) { h += y - _vpY; y = _vpY; }
+  if (y < _vpY) 
+  { 
+    alpha += delta * (_vpY - y); // part of gradient is invisible
+    color = fastBlend((uint8_t)alpha, color1, color2);
+    h += y - _vpY; 
+    y = _vpY; 
+  }
 
   if ((x + w) > _vpW) w = _vpW - x;
   if ((y + h) > _vpH) h = _vpH - y;
@@ -4840,10 +4850,6 @@ void TFT_eSPI::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h, uin
   if ((w < 1) || (h < 1)) return;
 
   begin_nin_write();
-
-  float delta = -255.0/h;
-  float alpha = 255.0;
-  uint32_t color = color1;
 
   while (h--) {
     drawFastHLine(x, y++, w, color);
@@ -4863,13 +4869,23 @@ void TFT_eSPI::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h, uin
 {
   if (_vpOoB) return;
 
+  float delta = -255.0/w;
+  float alpha = 255.0;
+  uint32_t color = color1;
+
   x+= _xDatum;
   y+= _yDatum;
 
   // Clipping
   if ((x >= _vpW) || (y >= _vpH)) return;
 
-  if (x < _vpX) { w += x - _vpX; x = _vpX; }
+  if (x < _vpX) 
+  { 
+    alpha += delta * (_vpX - x); // part of gradient is invisible
+    color = fastBlend((uint8_t)alpha, color1, color2);
+    w += x - _vpX; 
+    x = _vpX; 
+  }
   if (y < _vpY) { h += y - _vpY; y = _vpY; }
 
   if ((x + w) > _vpW) w = _vpW - x;
@@ -4878,10 +4894,6 @@ void TFT_eSPI::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h, uin
   if ((w < 1) || (h < 1)) return;
 
   begin_nin_write();
-
-  float delta = -255.0/w;
-  float alpha = 255.0;
-  uint32_t color = color1;
 
   while (w--) {
     drawFastVLine(x++, y, h, color);
@@ -5107,14 +5119,7 @@ uint16_t TFT_eSPI::decodeUTF8(uint8_t *buf, uint16_t *index, uint16_t remaining)
 *************************************************************************************x*/
 uint16_t TFT_eSPI::alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc)
 {
-  // Split out and blend 5-bit red and blue channels
-  uint32_t rxb = bgc & 0xF81F;
-  rxb += ((fgc & 0xF81F) - rxb) * (alpha >> 2) >> 6;
-  // Split out and blend 6-bit green channel
-  uint32_t xgx = bgc & 0x07E0;
-  xgx += ((fgc & 0x07E0) - xgx) * alpha >> 8;
-  // Recombine channels
-  return (rxb & 0xF81F) | (xgx & 0x07E0);
+  return fastBlend(alpha, fgc, bgc);
 }
 
 /***************************************************************************************

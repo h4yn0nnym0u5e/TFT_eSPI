@@ -1055,6 +1055,9 @@ void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_
 
   PI_CLIP;
 
+  dirtyArea.extend(x,y);
+  dirtyArea.extend(x+dw-1,y+dh-1);
+
   if (_bpp == 16) // Plot a 16 bpp image into a 16 bpp Sprite
   {
     if (SPRITE_NO_TRANSPARENCY == transparent)
@@ -1230,6 +1233,9 @@ void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, const u
   if (data == nullptr || !_created) return;
 
   PI_CLIP;
+
+  dirtyArea.extend(x,y);
+  dirtyArea.extend(x+dw-1,y+dh-1);
 
   if (_bpp == 16) // Plot a 16 bpp image into a 16 bpp Sprite
   {
@@ -1693,6 +1699,8 @@ void TFT_eSprite::drawPixel(int32_t x, int32_t y, uint32_t color)
   // Range checking
   if ((x < _vpX) || (y < _vpY) ||(x >= _vpW) || (y >= _vpH)) return;
 
+  dirtyArea.extend(x,y); // track sprite changed area
+
   if (_bpp == 16)
   {
     if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
@@ -1817,6 +1825,9 @@ void TFT_eSprite::drawFastVLine(int32_t x, int32_t y, int32_t h, uint32_t color)
 
   if (h < 1) return;
 
+  dirtyArea.extend(x,y);
+  dirtyArea.extend(x,y+h-1);
+
   if (_bpp == 16)
   {
     if (_spriteSwapBytes) color = (color >> 8) | (color << 8);
@@ -1877,6 +1888,9 @@ void TFT_eSprite::drawFastHLine(int32_t x, int32_t y, int32_t w, uint32_t color)
   if ((x + w) > _vpW) w = _vpW - x;
 
   if (w < 1) return;
+
+  dirtyArea.extend(x,y);
+  dirtyArea.extend(x+w-1,y);
 
   if (_bpp == 16)
   {
@@ -1944,6 +1958,9 @@ void TFT_eSprite::fillRect(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t 
   if ((w < 1) || (h < 1)) return;
 
   int32_t yp = _iwidth * y + x;
+
+  dirtyArea.extend(x,y);
+  dirtyArea.extend(x+w-1,y+h-1);
 
   if (_bpp == 16)
   {

@@ -7,6 +7,41 @@
 
 #define SPRITE_NO_TRANSPARENCY 0x00FFFFFF // special "transparency colour": no sprite colour is transparent
 
+// Helper class to track extent of "dirty" area
+class TFT_DirtyArea
+{
+    int32_t xmin{INT32_MAX},xmax{INT32_MIN},
+            ymin{INT32_MAX},ymax{INT32_MIN};
+  public:
+    void extend(int32_t x, int32_t y)  // (possibly) extend dirty area
+    {
+      if (x < xmin) xmin = x;
+      if (y < ymin) ymin = y;
+      if (x > xmax) xmax = x;
+      if (y > ymax) ymax = y;
+    }
+
+    bool get(int32_t& x, int32_t& y, int32_t& w, int32_t& h)
+    {
+      x = xmin; y = ymin;
+      if (INT32_MAX != xmin) // area has been dirtied
+      {
+        w = xmax - xmin + 1;
+        h = ymax - ymin + 1;
+      }
+      else
+        w = h = 0; // nothing to see here 
+        
+      return w > 0;        
+    }
+
+    void clear(void)
+    {
+      xmin = ymin = INT32_MAX;
+      xmax = ymax = INT32_MIN;
+    }
+};
+
 class TFT_eSprite : public TFT_eSPI {
 
  public:
@@ -41,6 +76,13 @@ class TFT_eSprite : public TFT_eSPI {
            // Select the frame buffer for graphics write (for 2 colour ePaper and DMA toggle buffer)
            // Returns a pointer to the Sprite frame buffer
   void*    frameBuffer(int8_t f);
+
+           // "dirty area" support. Allows tracking of sprite areas that have
+           // changed so the area to be pushed can be minimised
+  void     clearDirtyArea(void) { dirtyArea.clear(); }
+  bool     getDirtyArea(int32_t& x, int32_t& y, int32_t& w, int32_t& h)
+           { return dirtyArea.get(x,y,w,h); } // true if dirty area is valid
+  void     getTFTarea(int& w, int& h)  { w = _tft->width(); h = _tft->height(); }
 
            // optionally swap bytes while drawing into Sprite memory: default true
   void     setSpriteSwapBytes(bool b) { _spriteSwapBytes = b; }
@@ -159,6 +201,12 @@ class TFT_eSprite : public TFT_eSPI {
            // Print indexed glyph to sprite using loaded font at x,y
   int16_t  printToSprite(int16_t x, int16_t y, uint16_t index);
 
+  // support for async pushing of sprite to TFT
+  void startWrite(void) { _tft->startWrite(); }
+  void pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t* image, uint16_t* buffer = nullptr)
+      { _tft->pushImageDMA( x,y,w,h,image,buffer); }
+  void endWrite(void)   { _tft->endWrite(); }
+
  private:
 
   TFT_eSPI *_tft;
@@ -194,6 +242,8 @@ class TFT_eSprite : public TFT_eSPI {
   int32_t  _sx, _sy; // x,y for scroll zone
   uint32_t _sw, _sh; // w,h for scroll zone
   uint32_t _scolor;  // gap fill colour for scroll zone
+
+  TFT_DirtyArea dirtyArea; // used to track sprite changes
 
   int32_t  _iwidth, _iheight; // Sprite memory image bit width and height (swapped during rotations)
   int32_t  _dwidth, _dheight; // Real sprite width and height (for <8bpp Sprites)

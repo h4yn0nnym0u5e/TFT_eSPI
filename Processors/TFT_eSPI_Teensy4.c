@@ -527,7 +527,7 @@ bool TFT_eSPI_Teensy4_SPI_Helper::prepDMAtransfer(uint16_t* image, int pixels, T
   pDMA->sourceBuffer(image, mainTransfer * sizeof *image); // pretend its fewer writes...
   pDMA->destination(hardware->TDR);  // this is our destination: SPI transmit register (may stuff NBYTES)
   pDMA->TCD->NBYTES = sizeof *image * LOOP_MINOR_PIXELS;   // ...then bump up minor loop size
-  pDMA->TCD->ATTR_DST = 1; // and say the destination size is 16 bits
+  pDMA->TCD->ATTR_DST = DMA_TCD_ATTR_SIZE_16BIT; // and say the destination size is 16 bits
   pDMA->triggerAtHardwareEvent(SPIattr.tx_dma_channel);    // pick the correct event to trigger DMA
   pDMA->TCD->CSR &= ~(DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF); // no interrupts for now
   pDMA->disableOnCompletion(); // disable DMA when done

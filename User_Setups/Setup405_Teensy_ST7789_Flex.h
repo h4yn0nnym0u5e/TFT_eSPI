@@ -117,9 +117,9 @@
 // Define this macro with the number of FlexIOSPI busses expected 
 // FlexIOSPI pin assignments are dealt with in the constructor(s)
 // Leave undefined to confine use to LPSPI busses
-#define TFT_FLEXIOSPI_COUNT 1
-#define TFT_FLEXIOSPI_CS_LIST  8
-#define TFT_FLEXIOSPI_DC_LIST 10
+#define TFT_FLEXIOSPI_COUNT    1
+#define TFT_FLEXIOSPI_CS_LIST  2
+#define TFT_FLEXIOSPI_DC_LIST  0
 #define TFT_SPI_MODE (SPI_MODE3 | SPI_MODE_TRANSMIT_ONLY) // transmit-only allows faster SPI clock
 
 #define TFT_CS   CS_from_constructor
@@ -167,11 +167,12 @@
 // #define SPI_FREQUENCY   5'000'000
 // #define SPI_FREQUENCY  10'000'000
 // #define SPI_FREQUENCY  16'000'000
-// #define SPI_FREQUENCY  20'000'000
+ #define SPI_FREQUENCY  20'000'000
 // #define SPI_FREQUENCY  27'000'000
+// #define SPI_FREQUENCY  30'000'000
 // #define SPI_FREQUENCY  40'000'000
 // #define SPI_FREQUENCY  55'000'000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
-#define SPI_FREQUENCY  60'000'000
+//#define SPI_FREQUENCY  60'000'000
 // #define SPI_FREQUENCY  80'000'000
 
 // Optional reduced SPI frequency for reading TFT

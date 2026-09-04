@@ -206,6 +206,7 @@ class TFT_eSprite : public TFT_eSPI {
   void pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t* image, uint16_t* buffer = nullptr)
       { _tft->pushImageDMA( x,y,w,h,image,buffer); }
   void endWrite(void)   { _tft->endWrite(); }
+  void dmaWait(void) { _tft->dmaWait(); }
 
  private:
 

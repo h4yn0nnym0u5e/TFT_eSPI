@@ -360,7 +360,7 @@ class TFT_eSPI_Teensy4_FlexIOSPI_Helper
       //spi.transfer(image, nullptr, pixels*sizeof(uint16_t), evrr);
       spi.transfer16(image, nullptr, pixels, evrr);
     }
-    void finishDMAtransfer(void){} // not needed
+    void finishDMAtransfer(void){ clearDMAbusy(); } // force DMA to idle, maybe
     bool dmaBusy(void){ return dmaIsBusy; }
     void clearDMAbusy(void) { dmaIsBusy = false; }
 };
@@ -473,7 +473,6 @@ class TFT_eSPI_Teensy4_SPI_with_DMA
     void initDMA(void) { pSPI->initDMA(); }
     void deInitDMA(void) { pSPI->deInitDMA(); }
     bool dmaBusy(void) { return pSPI->dmaBusy(); }
-    void dmaWait(void);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////

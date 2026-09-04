@@ -613,18 +613,18 @@ void TFT_eSPI::deInitDMA(void) { DMA_Enabled=false; /* spi_dma.getDMA().release(
 // i.e. we're completely done with the hardware
 bool TFT_eSPI::dmaBusy(void) 
 { 
-  yield(); // may need to allow EventResponder to trigger
+  bool inISR = (SCB_ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
+  if (!inISR) // may need to allow EventResponder to trigger
+    yield(); 
   return spi_dma.dmaBusy(); 
 }
 
 // This waits for a completed transfer, then tidies up. If called
 // after dmaBusy() starts returning false, won't take long
-void TFT_eSPI::dmaWait(void) 
+void TFT_eSPI::dmaWait(bool waitBusy) 
 { 
-  bool inISR = (SCB_ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
-  while (dmaBusy())
-    if (!inISR)
-      yield();
+  while (waitBusy && dmaBusy())
+    ;
   if (spi_dma.cleanupNeeded())
   {
     spi_dma.finishDMAtransfer();

@@ -862,7 +862,7 @@ class TFT_eSPI : public Print
 
            // Check if the DMA is complete - use while(tft.dmaBusy); for a blocking wait
   bool     dmaBusy(void); // returns true if DMA is still in progress
-  void     dmaWait(void); // wait until DMA is complete
+  void     dmaWait(bool waitBusy = true); // wait until DMA is complete
 #if defined(TFT_ESPI_TEENSY)  // Teensy-specific methods
   void     dmaAttachCompletionISR(void (*isr)(TFT_eSPI& which)) { _completionISR = isr; }
 #endif // defined(TFT_ESPI_TEENSY)

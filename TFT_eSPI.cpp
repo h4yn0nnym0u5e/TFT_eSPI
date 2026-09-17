@@ -2011,7 +2011,8 @@ void TFT_eSPI::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t *da
 {
   PI_CLIP;
 
-  begin_tft_write();
+  // begin_tft_write();
+  begin_nin_write();
   inTransaction = true;
   bool swap = _swapBytes;
 
@@ -2205,7 +2206,8 @@ void TFT_eSPI::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t *da
   }
   _swapBytes = swap; // Restore old value
   inTransaction = lockTransaction;
-  end_tft_write();
+  //end_tft_write();
+  end_nin_write();
 }
 
 /***************************************************************************************

@@ -1047,6 +1047,20 @@ uint16_t TFT_eSprite::readPixel(int32_t x, int32_t y)
 
 /***************************************************************************************
 ** Function name:           pushImage
+** Description:             plot 8 or 4 or 1 bit image or sprite with a transparent colour
+***************************************************************************************/
+void TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t  *data, uint8_t  transparent, bool bpp8, uint16_t *cmap)
+{   
+  PI_CLIP;  
+  dirtyArea.extend(x,y); 
+  dirtyArea.extend(x+dw-1,y+dh-1);
+  
+  TFT_eSPI::pushImage(x,y,w,h,data,transparent,bpp8,cmap); 
+}
+  
+
+/***************************************************************************************
+** Function name:           pushImage
 ** Description:             push image into a defined area of a sprite
 ***************************************************************************************/
 void  TFT_eSprite::pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp, int32_t transparent)

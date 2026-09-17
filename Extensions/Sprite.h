@@ -82,6 +82,7 @@ class TFT_eSprite : public TFT_eSPI {
   void     clearDirtyArea(void) { dirtyArea.clear(); }
   bool     getDirtyArea(int32_t& x, int32_t& y, int32_t& w, int32_t& h)
            { return dirtyArea.get(x,y,w,h); } // true if dirty area is valid
+  bool     isDirty(void) { int32_t x,y,w,h; return getDirtyArea(x,y,w,h); }
   void     getTFTarea(int& w, int& h)  { w = _tft->width(); h = _tft->height(); }
 
            // optionally swap bytes while drawing into Sprite memory: default true
@@ -123,7 +124,6 @@ class TFT_eSprite : public TFT_eSPI {
            pushColor(uint16_t color, uint32_t len),
            // Push a pixel pre-formatted as a 1, 4, 8 or 16-bit colour (avoids conversion overhead)
            writeColor(uint16_t color),
-
            // Set the scroll zone, top left corner at x,y with defined width and height
            // The colour (optional, black is default) is used to fill the gap after the scroll
            setScrollRect(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t color = TFT_BLACK),
@@ -139,6 +139,18 @@ class TFT_eSprite : public TFT_eSPI {
 
            // Fill a rectangular area with a color (aka draw a filled rectangle)
            fillRect(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t color);
+           
+           // Write a solid block of a single colour  
+  virtual void     pushBlock(uint16_t color, uint32_t len) { pushColor(color, len); }
+
+           // Write a set of pixels stored in memory, use setSwapBytes(true/false) function to correct endianess
+  virtual void     pushPixels(const void * _data_in, uint32_t len)
+                      { 
+                        uint16_t* data_in = (uint16_t*) _data_in; 
+                        while (len--) 
+                          pushColor(*data_in++); 
+                      }
+
 
            // Set the coordinate rotation of the Sprite (for 1bpp Sprites only)
            // Note: this uses coordinate rotation and is primarily for ePaper which does not support
@@ -170,6 +182,8 @@ class TFT_eSprite : public TFT_eSPI {
            // Write an image (colour bitmap) to the sprite.
   void     pushImage(int32_t x0, int32_t y0, int32_t w, int32_t h, uint16_t *data, uint8_t sbpp = 0, int32_t transparent = SPRITE_NO_TRANSPARENCY);
   void     pushImage(int32_t x0, int32_t y0, int32_t w, int32_t h, const uint16_t *data);
+  void     pushImage(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t  *data, uint8_t  transparent, bool bpp8 = true, uint16_t *cmap = nullptr);
+  
 
            // Push the sprite to the TFT screen, this fn calls pushImage() in the TFT class.
            // Optionally a "transparent" colour can be defined, pixels of that colour will not be rendered

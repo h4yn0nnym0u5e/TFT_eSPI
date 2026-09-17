@@ -556,10 +556,10 @@ class TFT_eSPI : public Print
            pushColors(uint8_t  *data, uint32_t len); // Deprecated, use pushPixels()
 
            // Write a solid block of a single colour
-  void     pushBlock(uint16_t color, uint32_t len);
+  virtual void     pushBlock(uint16_t color, uint32_t len);
 
            // Write a set of pixels stored in memory, use setSwapBytes(true/false) function to correct endianess
-  void     pushPixels(const void * data_in, uint32_t len);
+  virtual void     pushPixels(const void * data_in, uint32_t len);
 
            // Support for half duplex (bi-directional SDA) SPI bus where MOSI must be switched to input
            #ifdef TFT_SDA_READ

@@ -787,26 +787,26 @@ class TFT_eSPI : public Print
 
   // Colour conversion
            // Convert 8-bit red, green and blue to 16 bits
-  uint16_t color565(uint8_t red, uint8_t green, uint8_t blue);
+  static uint16_t color565(uint8_t red, uint8_t green, uint8_t blue);
 
            // Convert 8-bit colour to 16 bits
-  uint16_t color8to16(uint8_t color332);
+  static uint16_t color8to16(uint8_t color332);
            // Convert 16-bit colour to 8 bits
-  uint8_t  color16to8(uint16_t color565);
+  static uint8_t  color16to8(uint16_t color565);
 
            // Convert 16-bit colour to/from 24-bit, R+G+B concatenated into LS 24 bits
-  uint32_t color16to24(uint16_t color565);
-  uint32_t color24to16(uint32_t color888);
+  static uint32_t color16to24(uint16_t color565);
+  static uint32_t color24to16(uint32_t color888);
 
            // Alpha blend 2 colours, see generic "alphaBlend_Test" example
            // alpha =   0 = 100% background colour
            // alpha = 255 = 100% foreground colour
-  uint16_t alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc);
+  static uint16_t alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc);
 
            // 16-bit colour alphaBlend with alpha dither (dither reduces colour banding)
-  uint16_t alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc, uint8_t dither);
+  static uint16_t alphaBlend(uint8_t alpha, uint16_t fgc, uint16_t bgc, uint8_t dither);
            // 24-bit colour alphaBlend with optional alpha dither
-  uint32_t alphaBlend24(uint8_t alpha, uint32_t fgc, uint32_t bgc, uint8_t dither = 0);
+  static uint32_t alphaBlend24(uint8_t alpha, uint32_t fgc, uint32_t bgc, uint8_t dither = 0);
 
   // Direct Memory Access (DMA) support functions
   // These can be used for SPI writes when using the ESP32 (original) or STM32 processors.

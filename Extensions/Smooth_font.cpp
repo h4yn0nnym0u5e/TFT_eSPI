@@ -12,7 +12,7 @@
 *************************************************************************************x*/
 void TFT_eSPI::loadFont(const uint8_t array[])
 {
-  if (array == nullptr) return;
+  if (array == nullptr || array == fontPtr) return;
   fontPtr = (uint8_t*) array;
   loadFont("", false);
 }

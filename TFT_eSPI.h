@@ -856,14 +856,15 @@ class TFT_eSPI : public Print
 #if defined (ESP32) // ESP32 only at the moment
            // For case where pointer is a const and the image data must not be modified (clipped or byte swapped)
   void     pushImageDMA(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t const* data);
+  void     dmaWait(void); // wait until DMA is complete
 #endif
            // Push a block of pixels into a window set up using setAddrWindow()
   void     pushPixelsDMA(uint16_t* image, uint32_t len);
 
            // Check if the DMA is complete - use while(tft.dmaBusy); for a blocking wait
   bool     dmaBusy(void); // returns true if DMA is still in progress
-  void     dmaWait(bool waitBusy = true); // wait until DMA is complete
 #if defined(TFT_ESPI_TEENSY)  // Teensy-specific methods
+  void     dmaWait(bool waitBusy = true); // wait until DMA is complete
   void     dmaAttachCompletionISR(void (*isr)(TFT_eSPI& which)) { _completionISR = isr; }
 #endif // defined(TFT_ESPI_TEENSY)
 
